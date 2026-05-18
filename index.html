@@ -100,8 +100,8 @@
 
     /* ── Left panel ── */
     .left-panel {
-      width: 380px;
-      min-width: 320px;
+      width: 480px;
+      min-width: 380px;
       display: flex;
       flex-direction: column;
       padding-right: 24px;
@@ -1029,34 +1029,6 @@
         <div class="left-scroll">
           <div class="panel-title">Migrate Pipeline</div>
 
-          <!-- File upload zone -->
-          <div class="form-group">
-            <label>Upload Pipeline File</label>
-            <div class="upload-zone" id="uploadZone">
-              <input type="file" id="fileUpload" accept=".yaml,.yml,.groovy,.Jenkinsfile,.json,.txt" style="display:none" onchange="handleFileUpload(event)">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              <p>Click to upload or drag &amp; drop</p>
-              <span class="upload-hint">.yaml  .yml  .groovy  Jenkinsfile</span>
-            </div>
-          </div>
-
-          <!-- Paste area -->
-          <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
-            <label>Or paste pipeline code</label>
-            <textarea id="cicdMigInput" placeholder="Paste your Azure DevOps, GitHub Actions, GitLab CI, or Jenkinsfile code here…"></textarea>
-            <div class="char-counter" id="cicdMigCharCounter">0 chars</div>
-          </div>
-
-          <!-- Auto-detect badge -->
-          <div class="detect-row">
-            <span>Detected source:</span>
-            <span class="detect-badge" id="detectBadge">Unknown</span>
-          </div>
-
           <!-- Migrate to -->
           <div class="form-group">
             <label>Migrate To</label>
@@ -1095,6 +1067,33 @@
                 <option value="deepseek-v3">DeepSeek-V3</option>
               </optgroup>
             </select>
+          </div>
+
+          <!-- File upload zone -->
+          <div class="form-group">
+            <label>Upload Pipeline File</label>
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="fileUpload" accept=".yaml,.yml,.groovy,.Jenkinsfile,.json,.txt" style="display:none" onchange="handleFileUpload(event)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <p>Click to upload or drag &amp; drop</p>
+              <span class="upload-hint">.yaml  .yml  .groovy  Jenkinsfile</span>
+            </div>
+          </div>
+
+          <!-- Paste area -->
+          <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
+            <label style="display:flex; align-items:center; gap:8px;">
+              Or paste pipeline code
+              <span style="display:flex; align-items:center; gap:4px; font-weight:400; font-size:11px; color:#555878;">
+                Detected: <span class="detect-badge" id="detectBadge">Unknown</span>
+              </span>
+            </label>
+            <textarea id="cicdMigInput" placeholder="Paste your Azure DevOps, GitHub Actions, GitLab CI, or Jenkinsfile code here…"></textarea>
+            <div class="char-counter" id="cicdMigCharCounter">0 chars</div>
           </div>
         </div>
 
@@ -1249,10 +1248,19 @@
       cfn:  'Example: Create a CloudFormation template for an S3 bucket with versioning enabled and a 30-day lifecycle policy',
     };
 
+    const placeholderLeadMap = {
+      tf:   'Describe the infrastructure you want to generate…',
+      yaml: 'Describe the Kubernetes / container configuration you want…',
+      sh:   'Describe the shell script you want to create…',
+      arm:  'Describe the Azure resource you want to provision…',
+      cfn:  'Describe the AWS resource you want to provision…',
+    };
+
     function updateLangTag() {
       const ft = document.getElementById('fileType').value;
       document.getElementById('langTag').textContent = badgeMap[ft] || ft.toUpperCase();
-      document.getElementById('input').placeholder = 'Describe the infrastructure you want to generate…\n\n' + (placeholderMap[ft] || '');
+      const lead = placeholderLeadMap[ft] || 'Describe what you want to generate…';
+      document.getElementById('input').placeholder = lead + '\n\n' + (placeholderMap[ft] || '');
     }
 
     function updateDownloadBtn() {
