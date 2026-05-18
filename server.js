@@ -3,7 +3,7 @@ const express   = require("express");
 const axios     = require("axios");
 const cors      = require("cors");
 const rateLimit = require("express-rate-limit");
-const { SYSTEM_PROMPTS, buildSystemPrompt, buildMigrationPrompt } = require("./prompts");
+const { SYSTEM_PROMPTS, buildSystemPrompt, buildCICDGenerationPrompt, buildCICDMigrationPrompt, buildMigrationPrompt } = require("./prompts");
 
 const app = express();
 app.use(express.json());
@@ -19,6 +19,7 @@ const limiter = rateLimit({
 app.use("/generate", limiter);
 app.use("/explain",  limiter);
 app.use("/migrate",  limiter);
+app.use("/cicd",     limiter);
 
 const TOKEN = process.env.GITHUB_TOKEN;
 if (!TOKEN) { console.error("GITHUB_TOKEN is not set in .env"); process.exit(1); }
@@ -33,11 +34,11 @@ const ALLOWED_MODELS = new Set([
   "deepseek-v3",
 ]);
 
-
-const ALLOWED_FILE_TYPES = new Set(["tf", "yaml", "json", "sh", "arm", "cfn"]);
-const MAX_INPUT_LEN = 4000;
-const MAX_CODE_LEN = 8000;
+const ALLOWED_FILE_TYPES      = new Set(["tf", "yaml", "json", "sh", "arm", "cfn"]);
 const ALLOWED_MIGRATE_TARGETS = new Set(["github-actions", "jenkins"]);
+const ALLOWED_CICD_PLATFORMS  = new Set(["github-actions", "azure-devops", "gitlab-ci", "jenkins"]);
+const MAX_INPUT_LEN = 4000;
+const MAX_CODE_LEN  = 8000;
 
 function validateInput(input, fileType) {
   if (!input || typeof input !== "string" || !input.trim())
@@ -45,7 +46,7 @@ function validateInput(input, fileType) {
   if (input.length > MAX_INPUT_LEN)
     return `input exceeds ${MAX_INPUT_LEN} characters`;
   if (!ALLOWED_FILE_TYPES.has(fileType))
-    return "fileType must be one of: tf, yaml, json, sh";
+    return "fileType must be one of: tf, yaml, json, sh, arm, cfn";
   return null;
 }
 
@@ -53,7 +54,6 @@ function pickModel(requested) {
   return ALLOWED_MODELS.has(requested) ? requested : DEFAULT_MODEL;
 }
 
-// Models that do not support streaming on GitHub Models / Azure inference
 const NON_STREAMING_MODELS = new Set(["deepseek-v3"]);
 
 function errorMessage(err) {
@@ -62,7 +62,7 @@ function errorMessage(err) {
 }
 
 
-/* ── Non-streaming endpoint (Explain Code from prompt) ── */
+/* ── IaC: Non-streaming generate (with optional explanation) ── */
 app.post("/generate", async (req, res) => {
   const { input, fileType, explain, model } = req.body;
   const err = validateInput(input, fileType);
@@ -81,10 +81,7 @@ app.post("/generate", async (req, res) => {
         ]
       },
       {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json"
-        },
+        headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
         timeout: 30000
       }
     );
@@ -109,7 +106,8 @@ app.post("/generate", async (req, res) => {
   }
 });
 
-/* ── Streaming endpoint (Generate button) ── */
+
+/* ── IaC: Streaming generate ── */
 app.post("/generate/stream", async (req, res) => {
   const { input, fileType, model } = req.body;
 
@@ -125,7 +123,6 @@ app.post("/generate/stream", async (req, res) => {
 
   try {
     if (NON_STREAMING_MODELS.has(selectedModel)) {
-      // Non-streaming fallback: fetch full response then emit as one SSE event
       const response = await axios.post(
         API_URL,
         {
@@ -135,13 +132,7 @@ app.post("/generate/stream", async (req, res) => {
             { role: "user",   content: input }
           ]
         },
-        {
-          headers: {
-            Authorization: `Bearer ${TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          timeout: 60000
-        }
+        { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, timeout: 60000 }
       );
       const content = response.data.choices[0].message.content ?? "";
       res.write(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`);
@@ -158,14 +149,7 @@ app.post("/generate/stream", async (req, res) => {
           ],
           stream: true
         },
-        {
-          headers: {
-            Authorization: `Bearer ${TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          responseType: "stream",
-          timeout: 30000
-        }
+        { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, responseType: "stream", timeout: 30000 }
       );
       response.data.pipe(res);
     }
@@ -176,7 +160,8 @@ app.post("/generate/stream", async (req, res) => {
   }
 });
 
-/* ── Explain existing code ── */
+
+/* ── IaC: Explain existing code ── */
 app.post("/explain", async (req, res) => {
   const { code, fileType, model } = req.body;
 
@@ -195,13 +180,7 @@ app.post("/explain", async (req, res) => {
           { role: "user",   content: code }
         ]
       },
-      {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 30000
-      }
+      { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, timeout: 30000 }
     );
 
     const explanation = response.data.choices[0].message.content.trim();
@@ -213,7 +192,8 @@ app.post("/explain", async (req, res) => {
   }
 });
 
-/* ── Migrate pipeline (ADO YAML → GitHub Actions or Jenkins) ── */
+
+/* ── IaC: Migrate YAML pipeline (legacy — ADO→GitHub Actions or Jenkins) ── */
 app.post("/migrate", async (req, res) => {
   const { code, targetPlatform, model } = req.body;
 
@@ -236,13 +216,7 @@ app.post("/migrate", async (req, res) => {
           { role: "user",   content: code }
         ]
       },
-      {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 60000
-      }
+      { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, timeout: 60000 }
     );
 
     let result = response.data.choices[0].message.content.trim();
@@ -254,6 +228,91 @@ app.post("/migrate", async (req, res) => {
     res.status(500).json({ error: errorMessage(err) });
   }
 });
+
+
+/* ── CI/CD: Generate pipeline (streaming) ── */
+app.post("/cicd/generate", async (req, res) => {
+  const { prompt, platform, model } = req.body;
+
+  if (!prompt || typeof prompt !== "string" || !prompt.trim())
+    return res.status(400).json({ error: "prompt is required" });
+  if (prompt.length > MAX_INPUT_LEN)
+    return res.status(400).json({ error: `prompt exceeds ${MAX_INPUT_LEN} characters` });
+  if (!ALLOWED_CICD_PLATFORMS.has(platform))
+    return res.status(400).json({ error: "platform must be one of: github-actions, azure-devops, gitlab-ci, jenkins" });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const selectedModel  = pickModel(model);
+  const systemPrompt   = buildCICDGenerationPrompt(platform);
+
+  try {
+    if (NON_STREAMING_MODELS.has(selectedModel)) {
+      const response = await axios.post(
+        API_URL,
+        { model: selectedModel, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }] },
+        { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, timeout: 60000 }
+      );
+      const content = response.data.choices[0].message.content ?? "";
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } else {
+      const response = await axios.post(
+        API_URL,
+        { model: selectedModel, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }], stream: true },
+        { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, responseType: "stream", timeout: 30000 }
+      );
+      response.data.pipe(res);
+    }
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.write(`data: ${JSON.stringify({ error: errorMessage(err) })}\n\n`);
+    res.end();
+  }
+});
+
+
+/* ── CI/CD: Migrate pipeline between tools ── */
+app.post("/cicd/migrate", async (req, res) => {
+  const { code, sourcePlatform, targetPlatform, model } = req.body;
+
+  if (!code || typeof code !== "string" || !code.trim())
+    return res.status(400).json({ error: "code is required" });
+  if (code.length > MAX_CODE_LEN)
+    return res.status(400).json({ error: `code exceeds ${MAX_CODE_LEN} characters` });
+  if (!ALLOWED_CICD_PLATFORMS.has(targetPlatform))
+    return res.status(400).json({ error: "targetPlatform must be one of: github-actions, azure-devops, gitlab-ci, jenkins" });
+
+  const source       = ALLOWED_CICD_PLATFORMS.has(sourcePlatform) ? sourcePlatform : "auto";
+  const systemPrompt = buildCICDMigrationPrompt(source, targetPlatform);
+
+  try {
+    const response = await axios.post(
+      API_URL,
+      {
+        model: pickModel(model),
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user",   content: code }
+        ]
+      },
+      { headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, timeout: 60000 }
+    );
+
+    let result = response.data.choices[0].message.content.trim();
+    result = result.replace(/^```[a-z]*\n?/i, "").replace(/```\s*$/, "").trim();
+    res.json({ result, targetPlatform });
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: errorMessage(err) });
+  }
+});
+
 
 app.use(express.static(__dirname));
 

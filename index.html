@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IaC Generator</title>
+  <title>IaC &amp; CI/CD Generator</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/highlightjs-line-numbers.js@2.8.0/dist/highlightjs-line-numbers.min.js"></script>
@@ -11,7 +11,6 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ── Animated gradient background ── */
     body {
       height: 100vh;
       overflow: auto;
@@ -32,7 +31,7 @@
 
     /* ── Header ── */
     header {
-      padding: 20px 40px;
+      padding: 16px 40px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -43,7 +42,7 @@
     }
 
     header .logo {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       background: linear-gradient(90deg, #a78bfa, #60a5fa);
       -webkit-background-clip: text;
@@ -59,6 +58,36 @@
       border-radius: 20px;
       padding: 2px 10px;
     }
+
+    /* ── Mode nav ── */
+    .mode-nav {
+      display: flex;
+      gap: 0;
+      padding: 0 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      flex-shrink: 0;
+    }
+
+    .mode-btn {
+      flex: unset;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: #555878;
+      border-radius: 0;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.2s;
+      margin-bottom: -1px;
+    }
+    .mode-btn:hover { color: #c4c4d8; }
+    .mode-btn.active { color: #e0e0e0; border-bottom-color: #a78bfa; }
 
     /* ── Main layout ── */
     .main {
@@ -139,7 +168,7 @@
       font-family: inherit;
       resize: vertical;
       outline: none;
-      min-height: 180px;
+      min-height: 160px;
       flex: 1;
       line-height: 1.6;
       transition: border-color 0.2s;
@@ -187,6 +216,33 @@
 
     .btn-primary:disabled,
     .btn-explain:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-migrate {
+      flex: unset;
+      padding: 8px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(217,119,6,0.3);
+      transition: all 0.2s;
+    }
+    .btn-migrate:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(217,119,6,0.45); }
+    .btn-migrate:active { transform: translateY(0); }
+    .btn-migrate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-cicd-migrate {
+      flex: 1;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(217,119,6,0.35);
+    }
+    .btn-cicd-migrate:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(217,119,6,0.5); }
+    .btn-cicd-migrate:active { transform: translateY(0); }
+    .btn-cicd-migrate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
     .spinner {
       display: none;
@@ -269,10 +325,15 @@
     }
     .badge-tf   { background: rgba(124,58,237,0.2);  color: #a78bfa; }
     .badge-yaml { background: rgba(8,145,178,0.2);   color: #38bdf8; }
-    .badge-json { background: rgba(217,119,6,0.2);   color: #fbbf24; }
     .badge-sh   { background: rgba(5,150,105,0.2);   color: #34d399; }
     .badge-arm  { background: rgba(0,120,212,0.2);   color: #60a5fa; }
     .badge-cfn  { background: rgba(255,153,0,0.2);   color: #fb923c; }
+    .badge-ado     { background: rgba(0,120,212,0.2);  color: #60a5fa; }
+    .badge-gha     { background: rgba(55,65,81,0.4);   color: #c4c4d8; }
+    .badge-glci    { background: rgba(252,109,38,0.2); color: #fb923c; }
+    .badge-jenkins { background: rgba(220,38,38,0.2);  color: #f87171; }
+    .badge-mig     { background: rgba(217,119,6,0.15); color: #fbbf24; }
+
 
     .history-time { font-size: 10px; color: #2e3154; margin-left: auto; flex-shrink: 0; }
 
@@ -282,6 +343,13 @@
     }
     .history-prompt-bold { font-weight: 600; color: #c4c4d8; }
     .history-prompt-rest { color: #555878; }
+
+    .history-clear {
+      flex: unset; font-size: 10px; color: #f87171; cursor: pointer;
+      opacity: 0.6; background: none; border: none; padding: 0 4px;
+      font-weight: 500; border-radius: 4px;
+    }
+    .history-clear:hover { opacity: 1; background: rgba(248,113,113,0.1); }
 
     /* ── Right panel ── */
     .right-panel {
@@ -396,7 +464,6 @@
     .tab.tab-active { color: #e0e0e0; border-bottom-color: #a78bfa; }
     .tab:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    /* ── Tab content (slide-in animation) ── */
     .tab-content {
       display: none;
       flex: 1;
@@ -467,7 +534,7 @@
     }
 
     /* ── Code output ── */
-    #outputPre {
+    #outputPre, #cicdOutputPre {
       flex: 1;
       min-height: 0;
       margin: 0;
@@ -476,7 +543,7 @@
       display: none;
     }
 
-    #codeEl {
+    #codeEl, #cicdCodeEl {
       display: block;
       padding: 20px 8px 20px 0 !important;
       font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace !important;
@@ -516,7 +583,7 @@
       min-height: 0;
     }
 
-    /* ── Explanation tab content ── */
+    /* ── Explanation tab ── */
     .explain-tab-body {
       flex: 1;
       overflow-y: auto;
@@ -553,42 +620,6 @@
       font-size: 13px;
     }
 
-    /* ── Migration tab ── */
-    .btn-migrate {
-      flex: unset;
-      padding: 8px 22px;
-      font-size: 13px;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: linear-gradient(135deg, #d97706, #b45309);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(217,119,6,0.3);
-      transition: all 0.2s;
-    }
-    .btn-migrate:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(217,119,6,0.45); }
-    .btn-migrate:active { transform: translateY(0); }
-    .btn-migrate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-    #migratedPre {
-      flex: 1;
-      min-height: 0;
-      margin: 0;
-      overflow: auto;
-      background: transparent !important;
-      display: none;
-    }
-
-    #migratedCodeEl {
-      display: block;
-      padding: 20px 8px 20px 0 !important;
-      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace !important;
-      font-size: 13px !important;
-      line-height: 1.7 !important;
-      background: transparent !important;
-    }
-
     /* ── Char counter ── */
     .char-counter {
       font-size: 11px; color: #555878; text-align: right;
@@ -597,10 +628,9 @@
     .char-counter.warn { color: #fbbf24; }
     .char-counter.over { color: #f87171; }
 
-    /* ── Status bar (hidden — replaced by toast) ── */
+    /* ── Status toast ── */
     .status-bar { display: none; }
 
-    /* ── Status toast ── */
     .status-toast {
       position: fixed;
       top: 72px;
@@ -643,7 +673,7 @@
     }
     button:disabled .shortcut-hint { display: none; }
 
-    /* ── Auto file-type detection feedback ── */
+    /* ── Auto file-type detection ── */
     @keyframes fileTypeGlow {
       0%   { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167,139,250,0.25); }
       100% { border-color: rgba(255,255,255,0.12); box-shadow: none; }
@@ -659,31 +689,117 @@
     }
     .auto-tag.show { opacity: 1; }
 
-    .history-clear {
-      flex: unset; font-size: 10px; color: #f87171; cursor: pointer;
-      opacity: 0.6; background: none; border: none; padding: 0 4px;
-      font-weight: 500; border-radius: 4px;
+    /* ── CI/CD sub-tabs ── */
+    .cicd-sub-tab-bar {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 4px;
+      flex-shrink: 0;
+      margin-bottom: 4px;
     }
-    .history-clear:hover { opacity: 1; background: rgba(248,113,113,0.1); }
+
+    .cicd-sub-tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: #555878;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cicd-sub-tab:hover { color: #c4c4d8; }
+    .cicd-sub-tab.active { background: rgba(167,139,250,0.18); color: #a78bfa; }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 18px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.02);
+      flex-shrink: 0;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.06);
+    }
+    .upload-zone svg { opacity: 0.35; margin-bottom: 6px; }
+    .upload-zone p { font-size: 13px; color: #7c7f9e; margin-bottom: 3px; }
+    .upload-hint { font-size: 11px; color: #3a3d5c; }
+
+    /* ── Detect row ── */
+    .detect-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #7c7f9e;
+      flex-shrink: 0;
+      padding: 2px 0;
+    }
+
+    .detect-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      color: #555878;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.2s;
+    }
+    .detect-badge.detected-github-actions { background: rgba(5,150,105,0.15);   color: #34d399; border-color: rgba(52,211,153,0.3); }
+    .detect-badge.detected-azure-devops   { background: rgba(0,120,212,0.15);   color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+    .detect-badge.detected-gitlab-ci      { background: rgba(252,109,38,0.15);  color: #fb923c; border-color: rgba(251,146,60,0.3); }
+    .detect-badge.detected-jenkins        { background: rgba(217,119,6,0.15);   color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+
+    /* ── CI/CD output area (no tabs — single output) ── */
+    .cicd-output-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
 
     @media (max-width: 768px) {
       body { height: auto; min-height: 100vh; }
       .main { flex-direction: column; overflow: visible; height: auto; }
       .left-panel { width: 100%; min-width: 0; padding-right: 0; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px; }
       .right-panel { padding-left: 0; min-height: 400px; }
+      .mode-nav { padding: 0 16px; }
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="logo">⚡ IaC Generator</div>
+    <div class="logo">⚡ IaC &amp; CI/CD Generator</div>
     <div class="badge">AI-Powered</div>
   </header>
 
-  <div class="main">
+  <!-- Mode switcher -->
+  <nav class="mode-nav">
+    <button class="mode-btn active" id="modeIac" onclick="switchMode('iac')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+      IaC Generator
+    </button>
+    <button class="mode-btn" id="modeCicd" onclick="switchMode('cicd')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M4.93 4.93a10 10 0 0 0 0 14.14"></path></svg>
+      CI/CD Generator
+    </button>
+  </nav>
 
-    <!-- LEFT: Input Panel -->
+  <!-- ═══════════════════════════════════════════════════════ IaC PANEL ══ -->
+  <div class="main" id="iacPanel">
+
     <div class="left-panel">
       <div class="left-scroll">
         <div class="panel-title">Configure &amp; Prompt</div>
@@ -693,7 +809,6 @@
           <select id="fileType" onchange="updateLangTag()">
             <option value="tf">Terraform (.tf)</option>
             <option value="yaml">YAML (.yaml)</option>
-            <option value="json">JSON (.json)</option>
             <option value="sh">Shell Script (.sh)</option>
             <option value="arm">ARM Template (.json)</option>
             <option value="cfn">CloudFormation (.yaml)</option>
@@ -730,12 +845,10 @@
 
         <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
           <label>Prompt</label>
-          <textarea id="input"
-            placeholder="Describe the infrastructure you want to generate…&#10;&#10;Example: Create an AWS VPC with 2 public subnets and an Internet Gateway"></textarea>
+          <textarea id="input" placeholder="Describe the infrastructure you want to generate…"></textarea>
           <div class="char-counter" id="charCounter">0 chars</div>
         </div>
 
-        <!-- History -->
         <div class="history-section">
           <div class="history-header" onclick="toggleHistory()">
             <span class="panel-title">History</span>
@@ -771,28 +884,11 @@
         <div class="btn-row" style="margin-top:4px;">
           <button class="btn-secondary" id="downloadBtn" onclick="downloadFile()" disabled>Download</button>
         </div>
-
-        <div id="migrateSection" style="display:none; flex-direction:column; gap:8px; margin-top:4px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
-          <label>Migrate Pipeline To</label>
-          <div style="display:flex; gap:8px;">
-            <select id="migrateTarget" style="flex:1;">
-              <option value="github-actions">&#8594; GitHub Actions</option>
-              <option value="jenkins">&#8594; Jenkins (Jenkinsfile)</option>
-            </select>
-            <button class="btn-migrate" id="migrateBtn" onclick="migrateCode()">
-              <div class="btn-content">
-                <div class="spinner" id="migrateSpinner"></div>
-                <span id="migrateBtnText">Migrate</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
         <div id="statusBar" class="status-bar">&nbsp;</div>
       </div>
     </div>
 
-    <!-- RIGHT: Output Panel -->
+    <!-- IaC RIGHT: Output -->
     <div class="right-panel">
       <div class="output-header">
         <div class="output-meta">
@@ -807,7 +903,6 @@
       </div>
 
       <div class="tab-box">
-        <!-- Tab bar -->
         <div class="tab-bar" id="tabBar" role="tablist">
           <div class="tab-dots">
             <div class="dot dot-red"></div>
@@ -816,10 +911,8 @@
           </div>
           <button class="tab tab-active" id="tab-code" role="tab" aria-selected="true" onclick="switchTab('code')">Code</button>
           <button class="tab" id="tab-explain" role="tab" aria-selected="false" onclick="switchTab('explain')" disabled>Explanation</button>
-          <button class="tab" id="tab-migrate" role="tab" aria-selected="false" onclick="switchTab('migrate')" disabled>Migration</button>
         </div>
 
-        <!-- Code tab -->
         <div class="tab-content tab-active" id="tc-code">
           <div class="placeholder-msg" id="placeholder">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
@@ -829,93 +922,264 @@
             <p>Your generated code will appear here</p>
           </div>
           <div class="skeleton" id="skeleton">
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
             <div class="sk-line"></div>
           </div>
           <pre id="outputPre"><code id="codeEl"></code></pre>
           <textarea id="editTextarea" spellcheck="false"></textarea>
         </div>
 
-        <!-- Explanation tab -->
         <div class="tab-content" id="tc-explain">
           <div class="explain-empty" id="explainEmpty">Run "Explain Code" to see an explanation here.</div>
           <div class="skeleton" id="explainSkeleton">
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
             <div class="sk-line"></div>
           </div>
           <div class="explain-tab-body" id="explainContent" style="display:none;"></div>
         </div>
+      </div>
+    </div>
 
-        <!-- Migration tab -->
-        <div class="tab-content" id="tc-migrate">
-          <div class="placeholder-msg" id="migratePlaceholder">
+  </div><!-- end #iacPanel -->
+
+
+  <!-- ═══════════════════════════════════════════════════════ CI/CD PANEL ══ -->
+  <div class="main" id="cicdPanel" style="display:none;">
+
+    <div class="left-panel">
+
+      <!-- Sub-tab switcher -->
+      <div class="cicd-sub-tab-bar">
+        <button class="cicd-sub-tab active" id="cicdTabGen" onclick="switchCicdTab('gen')">Generate Pipeline</button>
+        <button class="cicd-sub-tab" id="cicdTabMig" onclick="switchCicdTab('mig')">Migrate Pipeline</button>
+      </div>
+
+      <!-- ── Generate sub-panel ── -->
+      <div id="cicdGenPanel" style="flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;">
+        <div class="left-scroll">
+          <div class="panel-title">Configure &amp; Prompt</div>
+
+          <div class="form-group">
+            <label>Target Platform</label>
+            <select id="cicdPlatform" onchange="updateCicdPlaceholder()">
+              <option value="azure-devops">Azure DevOps Pipelines</option>
+              <option value="github-actions">GitHub Actions</option>
+              <option value="gitlab-ci">GitLab CI</option>
+              <option value="jenkins">Jenkins (Declarative)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Model</label>
+            <select id="cicdModelSelect">
+              <optgroup label="OpenAI">
+                <option value="gpt-4o-mini">gpt-4o-mini — Fast &amp; cheap</option>
+                <option value="gpt-4o">gpt-4o — Advanced</option>
+                <option value="gpt-4.1">gpt-4.1 — Latest</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini — Fast, latest</option>
+                <option value="o3-mini">o3-mini — Reasoning</option>
+                <option value="o4-mini">o4-mini — Fast reasoning</option>
+              </optgroup>
+              <optgroup label="Meta">
+                <option value="meta-llama-3.3-70b-instruct">Llama-3.3-70B</option>
+                <option value="meta-llama-3.1-405b-instruct">Llama-3.1-405B</option>
+              </optgroup>
+              <optgroup label="Mistral">
+                <option value="Mistral-Large-2411">Mistral Large</option>
+                <option value="Codestral-2501">Codestral — Code specialist</option>
+              </optgroup>
+              <optgroup label="Microsoft">
+                <option value="Phi-4">Phi-4</option>
+              </optgroup>
+              <optgroup label="DeepSeek">
+                <option value="deepseek-v3">DeepSeek-V3</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
+            <label>Prompt</label>
+            <textarea id="cicdInput" placeholder="Describe the CI/CD pipeline you want to generate…"></textarea>
+            <div class="char-counter" id="cicdCharCounter">0 chars</div>
+          </div>
+        </div>
+
+        <div class="left-footer">
+          <div class="btn-row">
+            <button class="btn-primary" id="cicdGenBtn" onclick="cicdGenerate()">
+              <div class="btn-content">
+                <div class="spinner" id="cicdGenSpinner"></div>
+                <span id="cicdGenBtnText">Generate Pipeline</span>
+                <kbd class="shortcut-hint" id="cicdShortcutHint">Ctrl↵</kbd>
+              </div>
+            </button>
+          </div>
+          <div class="btn-row" style="margin-top:4px;">
+            <button class="btn-secondary" id="cicdDownloadBtn" onclick="cicdDownload()" disabled>Download</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Migrate sub-panel ── -->
+      <div id="cicdMigPanel" style="display:none; flex:1; flex-direction:column; min-height:0; overflow:hidden;">
+        <div class="left-scroll">
+          <div class="panel-title">Migrate Pipeline</div>
+
+          <!-- File upload zone -->
+          <div class="form-group">
+            <label>Upload Pipeline File</label>
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="fileUpload" accept=".yaml,.yml,.groovy,.Jenkinsfile,.json,.txt" style="display:none" onchange="handleFileUpload(event)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <p>Click to upload or drag &amp; drop</p>
+              <span class="upload-hint">.yaml  .yml  .groovy  Jenkinsfile</span>
+            </div>
+          </div>
+
+          <!-- Paste area -->
+          <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
+            <label>Or paste pipeline code</label>
+            <textarea id="cicdMigInput" placeholder="Paste your Azure DevOps, GitHub Actions, GitLab CI, or Jenkinsfile code here…"></textarea>
+            <div class="char-counter" id="cicdMigCharCounter">0 chars</div>
+          </div>
+
+          <!-- Auto-detect badge -->
+          <div class="detect-row">
+            <span>Detected source:</span>
+            <span class="detect-badge" id="detectBadge">Unknown</span>
+          </div>
+
+          <!-- Migrate to -->
+          <div class="form-group">
+            <label>Migrate To</label>
+            <select id="cicdMigTarget" onchange="updateCicdMigTag()">
+              <option value="github-actions">GitHub Actions</option>
+              <option value="azure-devops">Azure DevOps Pipelines</option>
+              <option value="gitlab-ci">GitLab CI</option>
+              <option value="jenkins">Jenkins (Declarative)</option>
+            </select>
+          </div>
+
+          <!-- Model -->
+          <div class="form-group">
+            <label>Model</label>
+            <select id="cicdMigModelSelect">
+              <optgroup label="OpenAI">
+                <option value="gpt-4o-mini">gpt-4o-mini — Fast &amp; cheap</option>
+                <option value="gpt-4o">gpt-4o — Advanced</option>
+                <option value="gpt-4.1">gpt-4.1 — Latest</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini — Fast, latest</option>
+                <option value="o3-mini">o3-mini — Reasoning</option>
+                <option value="o4-mini">o4-mini — Fast reasoning</option>
+              </optgroup>
+              <optgroup label="Meta">
+                <option value="meta-llama-3.3-70b-instruct">Llama-3.3-70B</option>
+                <option value="meta-llama-3.1-405b-instruct">Llama-3.1-405B</option>
+              </optgroup>
+              <optgroup label="Mistral">
+                <option value="Mistral-Large-2411">Mistral Large</option>
+                <option value="Codestral-2501">Codestral</option>
+              </optgroup>
+              <optgroup label="Microsoft">
+                <option value="Phi-4">Phi-4</option>
+              </optgroup>
+              <optgroup label="DeepSeek">
+                <option value="deepseek-v3">DeepSeek-V3</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="left-footer">
+          <div class="btn-row">
+            <button class="btn-cicd-migrate" id="cicdMigBtn" onclick="cicdMigrate()">
+              <div class="btn-content">
+                <div class="spinner" id="cicdMigSpinner"></div>
+                <span id="cicdMigBtnText">Migrate Pipeline</span>
+              </div>
+            </button>
+          </div>
+          <div class="btn-row" style="margin-top:4px;">
+            <button class="btn-secondary" id="cicdMigDownloadBtn" onclick="cicdDownload()" disabled>Download</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CI/CD History -->
+      <div class="history-section" style="flex-shrink:0; margin-top:8px;">
+        <div class="history-header" onclick="toggleCicdHistory()">
+          <span class="panel-title">History</span>
+          <span class="history-count" id="cicdHistoryCount"></span>
+          <span class="history-spacer"></span>
+          <button class="history-clear" id="cicdHistoryClearBtn" onclick="clearCicdHistory(event)" style="display:none;">Clear all</button>
+          <svg class="history-chevron" id="cicdHistoryChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="history-list" id="cicdHistoryList" style="max-height:200px;">
+          <div class="history-empty" id="cicdHistoryEmpty">No history yet</div>
+        </div>
+      </div>
+
+    </div><!-- end left-panel -->
+
+    <!-- CI/CD RIGHT: Output -->
+    <div class="right-panel">
+      <div class="output-header">
+        <div class="output-meta">
+          <div class="panel-title">Output</div>
+          <span class="lang-tag" id="cicdLangTag">YAML</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="copy-btn" onclick="cicdCopy()">Copy</button>
+        </div>
+      </div>
+
+      <div class="tab-box">
+        <div class="tab-bar">
+          <div class="tab-dots">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+          </div>
+          <span style="padding: 11px 12px; font-size: 12px; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; color:#7c7f9e;">Pipeline Output</span>
+        </div>
+
+        <div class="cicd-output-body">
+          <div class="placeholder-msg" id="cicdPlaceholder">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
-              <path d="M5 12h14M12 5l7 7-7 7"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              <path d="M4.93 4.93a10 10 0 0 0 0 14.14"></path>
             </svg>
-            <p>Generate a YAML pipeline, then use the Migrate panel on the left to convert it</p>
+            <p>Your generated pipeline will appear here</p>
           </div>
-          <div class="skeleton" id="migrateSkeleton">
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
+          <div class="skeleton" id="cicdSkeleton">
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
+            <div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div>
             <div class="sk-line"></div>
           </div>
-          <pre id="migratedPre"><code id="migratedCodeEl"></code></pre>
+          <pre id="cicdOutputPre"><code id="cicdCodeEl"></code></pre>
         </div>
       </div>
     </div>
 
-  </div>
+  </div><!-- end #cicdPanel -->
+
 
   <script>
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
 
-    const langMap  = { tf: 'hcl', yaml: 'yaml', json: 'json', sh: 'bash', arm: 'json', cfn: 'yaml' };
-    const badgeMap = { tf: 'TF',  yaml: 'YAML', json: 'JSON', sh: 'SH',  arm: 'ARM', cfn: 'CFN' };
-    const fileExtMap = { tf: 'tf', yaml: 'yaml', json: 'json', sh: 'sh', arm: 'json', cfn: 'yaml' };
-
-    let lastCode       = '';
-    let lastFileType   = 'tf';
-    let historyOpen    = false;
-    let activeIndex    = -1;
-    let currentTab     = 'code';
-    let editMode       = false;
-    let migratedCode   = '';
-    let migratedPlatform = '';
-    const history    = [];
-    const STORAGE_KEY = 'iac-gen-history';
-
-    const migrateLangMap = { 'github-actions': 'yaml', 'jenkins': 'groovy' };
-    const migrateExtMap  = { 'github-actions': 'yml',  'jenkins': 'groovy' };
-
-    /* ── UI helpers ── */
-    function updateLangTag() {
-      const ft = document.getElementById('fileType').value;
-      document.getElementById('langTag').textContent = badgeMap[ft] || ft.toUpperCase();
-      document.getElementById('migrateSection').style.display = ft === 'yaml' ? 'flex' : 'none';
-    }
+    /* ════════════════════════════ SHARED ════════════════════════════ */
 
     let _statusTimer = null;
     function setStatus(msg, type = '') {
@@ -930,27 +1194,84 @@
       }
     }
 
+    function triggerDownload(content, filename) {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function timeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60)    return 'just now';
+      if (s < 3600)  return Math.floor(s / 60)   + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600)  + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
+
+    /* ════════════════════════ MODE SWITCHING ════════════════════════ */
+
+    let currentMode = 'iac';
+    function switchMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+      document.getElementById('iacPanel').style.display  = mode === 'iac'  ? 'flex' : 'none';
+      document.getElementById('cicdPanel').style.display = mode === 'cicd' ? 'flex' : 'none';
+      document.getElementById('modeIac').classList.toggle('active',  mode === 'iac');
+      document.getElementById('modeCicd').classList.toggle('active', mode === 'cicd');
+    }
+
+    /* ═══════════════════════════ IaC PANEL ══════════════════════════ */
+
+    const langMap    = { tf: 'hcl', yaml: 'yaml', sh: 'bash', arm: 'json', cfn: 'yaml' };
+    const badgeMap   = { tf: 'TF',  yaml: 'YAML', sh: 'SH',  arm: 'ARM',  cfn: 'CFN' };
+    const fileExtMap = { tf: 'tf',  yaml: 'yaml', sh: 'sh',  arm: 'json', cfn: 'yaml' };
+
+    let lastCode     = '';
+    let lastFileType = 'tf';
+    let historyOpen  = false;
+    let activeIndex  = -1;
+    let currentTab   = 'code';
+    let editMode     = false;
+    const history    = [];
+    const STORAGE_KEY = 'iac-gen-history';
+
+    const placeholderMap = {
+      tf:   'Example: Create an Azure resource group with a Virtual Network containing 2 subnets and a Network Security Group',
+      yaml: 'Example: Create a Kubernetes Deployment YAML for an nginx app with 3 replicas, a ClusterIP service, and CPU/memory resource limits',
+      sh:   'Example: Write a shell script to install Docker on Ubuntu, add the current user to the docker group, and enable the service on startup',
+      arm:  'Example: Create an ARM template to deploy an Azure App Service Plan and a Web App with Node.js 20 runtime',
+      cfn:  'Example: Create a CloudFormation template for an S3 bucket with versioning enabled and a 30-day lifecycle policy',
+    };
+
+    function updateLangTag() {
+      const ft = document.getElementById('fileType').value;
+      document.getElementById('langTag').textContent = badgeMap[ft] || ft.toUpperCase();
+      document.getElementById('input').placeholder = 'Describe the infrastructure you want to generate…\n\n' + (placeholderMap[ft] || '');
+    }
+
     function updateDownloadBtn() {
-      document.getElementById('downloadBtn').disabled = !(lastCode || migratedCode);
+      document.getElementById('downloadBtn').disabled = !lastCode;
     }
 
     function setBusy(busy) {
-      document.getElementById('generateBtn').disabled   = busy;
-      document.getElementById('explainBtn').disabled    = busy;
-      document.getElementById('editToggleBtn').disabled = busy;
-      document.getElementById('doneEditBtn').disabled   = busy;
-      document.getElementById('migrateBtn').disabled    = busy;
+      document.getElementById('generateBtn').disabled    = busy;
+      document.getElementById('explainBtn').disabled     = busy;
+      document.getElementById('editToggleBtn').disabled  = busy;
+      document.getElementById('doneEditBtn').disabled    = busy;
     }
 
-    function getModel() {
-      return document.getElementById('modelSelect').value;
-    }
+    function getModel() { return document.getElementById('modelSelect').value; }
 
-    /* ── Tab switching (with slide-in animation) ── */
     function switchTab(tab) {
       if (tab === currentTab) return;
       currentTab = tab;
-      ['code', 'explain', 'migrate'].forEach(t => {
+      ['code', 'explain'].forEach(t => {
         const isActive = t === tab;
         const btn = document.getElementById('tab-' + t);
         btn.classList.toggle('tab-active', isActive);
@@ -959,13 +1280,6 @@
       });
     }
 
-    function updateMigrateTab() {
-      const canMigrate = !!(lastCode && lastFileType === 'yaml');
-      document.getElementById('tab-migrate').disabled = !canMigrate;
-      if (!canMigrate && currentTab === 'migrate') switchTab('code');
-    }
-
-    /* ── Code panel states ── */
     function showPlaceholder() {
       document.getElementById('placeholder').style.display = 'flex';
       document.getElementById('skeleton').style.display    = 'none';
@@ -980,7 +1294,6 @@
       switchTab('code');
     }
 
-    /* ── Syntax highlight + line numbers ── */
     function renderCode(code, fileType) {
       if (editMode) {
         editMode = false;
@@ -1000,15 +1313,9 @@
       document.getElementById('outputPre').style.display   = 'block';
       lastCode     = code;
       lastFileType = fileType;
-      migratedCode     = '';
-      migratedPlatform = '';
-      document.getElementById('migratedPre').style.display       = 'none';
-      document.getElementById('migratePlaceholder').style.display = 'flex';
-      updateMigrateTab();
       updateDownloadBtn();
     }
 
-    /* ── Explanation panel ── */
     function showExplainSkeleton() {
       document.getElementById('tab-explain').disabled          = false;
       document.getElementById('explainEmpty').style.display    = 'none';
@@ -1035,7 +1342,7 @@
       switchTab('code');
     }
 
-    /* ── History ── */
+    /* History */
     function pushHistory(prompt, fileType, code, explanation) {
       history.unshift({ prompt, fileType, code, explanation, ts: Date.now() });
       if (history.length > 10) history.pop();
@@ -1056,18 +1363,14 @@
       const list    = document.getElementById('historyList');
       const countEl = document.getElementById('historyCount');
       const emptyEl = document.getElementById('historyEmpty');
-
       countEl.textContent   = history.length;
       countEl.style.display = history.length > 0 ? 'inline' : 'none';
       document.getElementById('historyClearBtn').style.display = history.length > 0 ? 'inline' : 'none';
-
       list.querySelectorAll('.history-item').forEach(el => el.remove());
-
       if (history.length === 0) { emptyEl.style.display = 'block'; return; }
       emptyEl.style.display = 'none';
-
       history.forEach((item, i) => {
-        const el = document.createElement('div');
+        const el  = document.createElement('div');
         el.className = 'history-item' + (i === activeIndex ? ' active' : '');
         el.onclick   = () => loadHistory(i);
         const head = escHtml(item.prompt.slice(0, 40));
@@ -1089,12 +1392,7 @@
       document.getElementById('fileType').value = item.fileType;
       updateLangTag();
       renderCode(item.code, item.fileType);
-      if (item.explanation) {
-        showExplanation(item.explanation);
-      } else {
-        clearExplanation();
-        switchTab('code');
-      }
+      if (item.explanation) { showExplanation(item.explanation); } else { clearExplanation(); switchTab('code'); }
       renderHistoryList();
       setStatus('Loaded from history.', 'success');
     }
@@ -1110,26 +1408,11 @@
     }
 
     function loadStoredHistory() {
-      try {
-        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        history.push(...stored);
-      } catch {}
+      try { const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); history.push(...stored); } catch {}
       renderHistoryList();
     }
 
-    function timeAgo(ts) {
-      const s = Math.floor((Date.now() - ts) / 1000);
-      if (s < 60)    return 'just now';
-      if (s < 3600)  return Math.floor(s / 60)   + 'm ago';
-      if (s < 86400) return Math.floor(s / 3600)  + 'h ago';
-      return Math.floor(s / 86400) + 'd ago';
-    }
-
-    function escHtml(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    /* ── Generate (streaming via SSE) ── */
+    /* IaC Generate (streaming) */
     async function generate() {
       const input = document.getElementById('input').value.trim();
       if (!input) { setStatus('Please enter a prompt.', 'error'); return; }
@@ -1142,7 +1425,6 @@
       clearExplanation();
       switchTab('code');
 
-      // Show output area immediately — tokens will appear as they arrive
       document.getElementById('downloadBtn').disabled = true;
       document.getElementById('placeholder').style.display = 'none';
       document.getElementById('skeleton').style.display    = 'none';
@@ -1175,11 +1457,9 @@
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
-          buffer = lines.pop(); // retain incomplete trailing line
-
+          buffer = lines.pop();
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const raw = line.slice(6).trim();
@@ -1188,15 +1468,10 @@
             try { parsed = JSON.parse(raw); } catch { continue; }
             if (parsed.error) throw new Error(parsed.error);
             const delta = parsed.choices?.[0]?.delta?.content ?? '';
-            if (delta) {
-              fullCode += delta;
-              codeEl.textContent = fullCode;
-              pre.scrollTop = pre.scrollHeight;
-            }
+            if (delta) { fullCode += delta; codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }
           }
         }
 
-        // Strip any markdown fences the model may have added, then highlight
         fullCode = fullCode.replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '').trim();
         if (!fullCode) throw new Error('No code was returned — the model may not support streaming.');
         renderCode(fullCode, fileType);
@@ -1212,13 +1487,11 @@
       }
     }
 
-    /* ── Explain Code ── */
+    /* IaC Explain */
     async function explainCode() {
       if (lastCode) { await explainExistingCode(); return; }
-
       const input = document.getElementById('input').value.trim();
       if (!input) { setStatus('Please enter a prompt.', 'error'); return; }
-
       const fileType = document.getElementById('fileType').value;
       setBusy(true);
       document.getElementById('explainSpinner').style.display = 'block';
@@ -1226,7 +1499,6 @@
       setStatus('Generating code with explanation…', 'loading');
       showSkeleton();
       showExplainSkeleton();
-
       try {
         const res  = await fetch(API_BASE + '/generate', {
           method: 'POST',
@@ -1242,7 +1514,7 @@
       } catch (err) {
         showPlaceholder();
         clearExplanation();
-        setStatus(err.message || 'Request failed — is the server running?', 'error');
+        setStatus(err.message || 'Request failed.', 'error');
       } finally {
         setBusy(false);
         document.getElementById('explainSpinner').style.display = 'none';
@@ -1256,7 +1528,6 @@
       document.getElementById('explainBtnText').textContent   = 'Explaining…';
       setStatus('Explaining current code…', 'loading');
       showExplainSkeleton();
-
       try {
         const res  = await fetch(API_BASE + '/explain', {
           method: 'POST',
@@ -1266,15 +1537,12 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         showExplanation(data.explanation);
-        if (activeIndex >= 0 && activeIndex < history.length) {
-          history[activeIndex].explanation = data.explanation;
-          saveHistory();
-        }
+        if (activeIndex >= 0 && activeIndex < history.length) { history[activeIndex].explanation = data.explanation; saveHistory(); }
         setStatus('Explanation ready.', 'success');
       } catch (err) {
         document.getElementById('explainSkeleton').style.display = 'none';
         document.getElementById('explainEmpty').style.display    = 'flex';
-        setStatus(err.message || 'Request failed — is the server running?', 'error');
+        setStatus(err.message || 'Request failed.', 'error');
       } finally {
         setBusy(false);
         document.getElementById('explainSpinner').style.display = 'none';
@@ -1282,14 +1550,14 @@
       }
     }
 
-    /* ── Edit output ── */
+    /* Edit */
     function toggleEdit() {
       if (!lastCode) { setStatus('Nothing to edit yet.', 'error'); return; }
       editMode = true;
       const ta = document.getElementById('editTextarea');
       ta.value = lastCode;
       ta.style.display = 'block';
-      document.getElementById('outputPre').style.display   = 'none';
+      document.getElementById('outputPre').style.display    = 'none';
       document.getElementById('editToggleBtn').style.display = 'none';
       document.getElementById('doneEditBtn').style.display   = '';
       ta.focus();
@@ -1303,139 +1571,41 @@
       document.getElementById('doneEditBtn').style.display   = 'none';
       editMode = false;
       renderCode(newCode, lastFileType);
-      if (activeIndex >= 0 && activeIndex < history.length) {
-        history[activeIndex].code = newCode;
-        saveHistory();
-      }
+      if (activeIndex >= 0 && activeIndex < history.length) { history[activeIndex].code = newCode; saveHistory(); }
       setStatus('Code updated.', 'success');
     }
 
-    /* ── Download / Copy ── */
-    function triggerDownload(content, filename) {
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
+    /* Download / Copy */
     function downloadFile() {
-      if (currentTab === 'migrate' && migratedCode) {
-        triggerDownload(migratedCode, `migrated.${migrateExtMap[migratedPlatform] || 'yaml'}`);
-      } else {
-        if (!lastCode) { setStatus('No content to download.', 'error'); return; }
-        triggerDownload(lastCode, `generated.${fileExtMap[lastFileType] || lastFileType}`);
-      }
+      if (!lastCode) { setStatus('No content to download.', 'error'); return; }
+      triggerDownload(lastCode, `generated.${fileExtMap[lastFileType] || lastFileType}`);
     }
 
     function copyOutput() {
-      let content, toastMsg;
-      if (currentTab === 'explain') {
-        content  = document.getElementById('explainContent').innerText.trim();
-        toastMsg = 'Explanation copied!';
-      } else if (currentTab === 'migrate') {
-        content  = migratedCode;
-        toastMsg = 'Migration copied!';
-      } else {
-        content  = lastCode;
-        toastMsg = 'Copied!';
-      }
+      const content = currentTab === 'explain'
+        ? document.getElementById('explainContent').innerText.trim()
+        : lastCode;
       if (!content) return;
       navigator.clipboard.writeText(content).then(() => {
         const toast = document.getElementById('copyToast');
-        toast.textContent = toastMsg;
+        toast.textContent = currentTab === 'explain' ? 'Explanation copied!' : 'Copied!';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 1800);
       });
     }
 
-    /* ── Migrate pipeline ── */
-    async function migrateCode() {
-      if (!lastCode) { setStatus('No YAML code to migrate.', 'error'); return; }
-
-      const targetPlatform = document.getElementById('migrateTarget').value;
-      setBusy(true);
-      document.getElementById('migrateSpinner').style.display = 'block';
-      document.getElementById('migrateBtnText').textContent   = 'Migrating…';
-      setStatus('Migrating pipeline…', 'loading');
-      document.getElementById('migratePlaceholder').style.display = 'none';
-      document.getElementById('migratedPre').style.display        = 'none';
-      document.getElementById('migrateSkeleton').style.display    = 'flex';
-      switchTab('migrate');
-
-      try {
-        const res = await fetch(API_BASE + '/migrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: lastCode, targetPlatform, model: getModel() })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-
-        migratedCode     = data.result;
-        migratedPlatform = targetPlatform;
-        renderMigratedCode(migratedCode, targetPlatform);
-        setStatus('Pipeline migrated successfully.', 'success');
-      } catch (err) {
-        document.getElementById('migrateSkeleton').style.display    = 'none';
-        document.getElementById('migratePlaceholder').style.display = 'flex';
-        setStatus(err.message || 'Migration failed — is the server running?', 'error');
-      } finally {
-        document.getElementById('migrateSkeleton').style.display = 'none';
-        setBusy(false);
-        document.getElementById('migrateSpinner').style.display = 'none';
-        document.getElementById('migrateBtnText').textContent   = 'Migrate';
-      }
-    }
-
-    function renderMigratedCode(code, platform) {
-      const lang = migrateLangMap[platform] || 'yaml';
-      const el   = document.getElementById('migratedCodeEl');
-      el.textContent = code;
-      el.className   = 'language-' + lang;
-      el.removeAttribute('data-highlighted');
-      hljs.highlightElement(el);
-      hljs.lineNumbersBlock(el);
-      document.getElementById('migratePlaceholder').style.display = 'none';
-      document.getElementById('migratedPre').style.display        = 'block';
-      updateDownloadBtn();
-    }
-
-    updateLangTag();
-    loadStoredHistory();
-    setInterval(renderHistoryList, 30_000);
-
-    // Ctrl+Enter / Cmd+Enter to generate
-    const inputEl = document.getElementById('input');
-    inputEl.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        generate();
-      }
-    });
-
-    // Character counter
-    const charCounter = document.getElementById('charCounter');
-    function updateCharCounter() {
-      const n = inputEl.value.length;
-      charCounter.textContent = n.toLocaleString() + ' chars';
-      charCounter.className = 'char-counter' + (n > 2000 ? ' over' : n > 1500 ? ' warn' : '');
-    }
-
-    // Auto file-type detection
+    /* Auto file-type detection */
     const FILE_TYPE_RULES = [
       { type: 'tf',   patterns: [/\bterraform\b/i, /\btf\b/i, /\bhcl\b/i, /\biac\b/i, /infrastructure[\s-]as[\s-]code/i] },
-      { type: 'arm',  patterns: [/azure\s+resource\s+manager/i, /\barm\s+template\b/i, /\bazure\s+arm\b/i, /\barm\b/i] },
+      { type: 'arm',  patterns: [/azure\s+resource\s+manager/i, /\barm\s+template\b/i, /\bazure\s+arm\b/i] },
       { type: 'cfn',  patterns: [/\bcloudformation\b/i, /\bcfn\b/i, /cloud\s*formation/i, /\baws\s+(?:template|stack|resource|infra)/i] },
-      { type: 'yaml', patterns: [/\byaml\b/i, /\bpipeline\b/i, /\bgithub[\s-]actions?\b/i, /\bci[\s/]?cd\b/i, /\bgitlab[\s-]ci\b/i, /\bazure[\s-]devops\b/i, /\bansible\b/i, /\bkubernetes\b/i, /\bk8s\b/i, /\bhelm\b/i, /\bdocker[\s-]?compose\b/i, /\bworkflow\b/i, /\bjenkinsfile\b/i, /\bjenkins\b/i] },
-      { type: 'json', patterns: [/\bjson\b/i, /\bpackage\.json\b/i, /\bappsettings\b/i] },
-      { type: 'sh',   patterns: [/\bshell[\s-]script\b/i, /\bbash[\s-]script\b/i, /\bbash\b/i, /\bshell\b/i, /\bscript\b/i, /\bzsh\b/i] },
+      { type: 'yaml', patterns: [/\byaml\b/i, /\bkubernetes\b/i, /\bk8s\b/i, /\bhelm\b/i, /\bdocker[\s-]?compose\b/i, /\bansible\b/i] },
+      { type: 'sh',   patterns: [/\bshell[\s-]script\b/i, /\bbash[\s-]script\b/i, /\bbash\b/i, /\bshell\b/i, /\bscript\b/i] },
     ];
 
     const fileTypeEl = document.getElementById('fileType');
     const autoTagEl  = document.getElementById('autoTag');
+    const inputEl    = document.getElementById('input');
     let _autoDetectTimer = null;
     let _autoTagTimer    = null;
 
@@ -1443,11 +1613,11 @@
       const text = inputEl.value;
       for (const rule of FILE_TYPE_RULES) {
         if (rule.patterns.some(p => p.test(text))) {
-          if (rule.type === fileTypeEl.value) return;   // already correct
+          if (rule.type === fileTypeEl.value) return;
           fileTypeEl.value = rule.type;
           updateLangTag();
           fileTypeEl.classList.remove('file-type-glow');
-          void fileTypeEl.offsetWidth;                  // restart animation
+          void fileTypeEl.offsetWidth;
           fileTypeEl.classList.add('file-type-glow');
           if (_autoTagTimer) clearTimeout(_autoTagTimer);
           autoTagEl.classList.add('show');
@@ -1457,36 +1627,445 @@
       }
     }
 
+    const charCounter = document.getElementById('charCounter');
+    function updateCharCounter() {
+      const n = inputEl.value.length;
+      charCounter.textContent = n.toLocaleString() + ' chars';
+      charCounter.className = 'char-counter' + (n > 2000 ? ' over' : n > 1500 ? ' warn' : '');
+    }
+
     inputEl.addEventListener('input', () => {
       updateCharCounter();
       if (_autoDetectTimer) clearTimeout(_autoDetectTimer);
       _autoDetectTimer = setTimeout(detectAndApplyFileType, 300);
     });
 
-    // Tab arrow-key navigation (ARIA tablist pattern)
-    const TAB_ORDER = ['code', 'explain', 'migrate'];
+    inputEl.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+    });
+
     document.getElementById('tabBar').addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-      const dir  = e.key === 'ArrowRight' ? 1 : -1;
-      const cur  = TAB_ORDER.indexOf(currentTab);
-      for (let i = cur + dir; i >= 0 && i < TAB_ORDER.length; i += dir) {
-        if (!document.getElementById('tab-' + TAB_ORDER[i]).disabled) {
+      const order = ['code', 'explain'];
+      const dir   = e.key === 'ArrowRight' ? 1 : -1;
+      const cur   = order.indexOf(currentTab);
+      for (let i = cur + dir; i >= 0 && i < order.length; i += dir) {
+        if (!document.getElementById('tab-' + order[i]).disabled) {
           e.preventDefault();
-          switchTab(TAB_ORDER[i]);
-          document.getElementById('tab-' + TAB_ORDER[i]).focus();
+          switchTab(order[i]);
+          document.getElementById('tab-' + order[i]).focus();
           break;
         }
       }
     });
 
-    // Platform-aware shortcut hint
     const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
     document.getElementById('shortcutHint').textContent = isMac ? '⌘↵' : 'Ctrl↵';
+
+    /* ═══════════════════════════ CI/CD PANEL ════════════════════════ */
+
+    const cicdLangMap    = { 'azure-devops': 'yaml', 'github-actions': 'yaml', 'gitlab-ci': 'yaml', 'jenkins': 'groovy' };
+    const cicdExtMap     = { 'azure-devops': 'yml',  'github-actions': 'yml',  'gitlab-ci': 'yml',  'jenkins': 'groovy' };
+    const cicdLangTagMap = { 'azure-devops': 'ADO',  'github-actions': 'GHA',  'gitlab-ci': 'GL CI','jenkins': 'JENKINS' };
+
+    const cicdGenPlaceholderMap = {
+      'azure-devops':   'Example: Create a 3-stage Azure DevOps pipeline for a Node.js app — install, test, and deploy to Azure App Service',
+      'github-actions': 'Example: Create a GitHub Actions workflow that triggers on pull requests — install dependencies, run tests, and upload coverage report',
+      'gitlab-ci':      'Example: Create a GitLab CI pipeline with build, test, and deploy stages for a Docker container pushed to a registry',
+      'jenkins':        'Example: Create a Jenkins Declarative Pipeline with stages for build, unit test, and deploy a Java Maven project to a remote server',
+    };
+
+    const platformDisplayNames = {
+      'github-actions': 'GitHub Actions',
+      'azure-devops':   'Azure DevOps',
+      'gitlab-ci':      'GitLab CI',
+      'jenkins':        'Jenkins',
+    };
+
+    let cicdLastCode     = '';
+    let cicdLastPlatform = '';
+    let cicdCurrentTab   = 'gen';
+    let cicdHistoryOpen  = false;
+    let cicdActiveIndex  = -1;
+    const cicdHistory    = [];
+    const CICD_STORAGE_KEY = 'cicd-gen-history';
+    const cicdBadgeMap   = { 'azure-devops': 'ADO', 'github-actions': 'GHA', 'gitlab-ci': 'GL CI', 'jenkins': 'JENKINS' };
+    const cicdBadgeCssMap = { 'azure-devops': 'ado', 'github-actions': 'gha', 'gitlab-ci': 'glci', 'jenkins': 'jenkins' };
+
+    function switchCicdTab(tab) {
+      cicdCurrentTab = tab;
+      document.getElementById('cicdTabGen').classList.toggle('active', tab === 'gen');
+      document.getElementById('cicdTabMig').classList.toggle('active', tab === 'mig');
+      document.getElementById('cicdGenPanel').style.display = tab === 'gen' ? 'flex' : 'none';
+      document.getElementById('cicdMigPanel').style.display = tab === 'mig' ? 'flex' : 'none';
+      cicdResetOutput();
+      if (tab === 'mig') updateCicdMigTag(); else updateCicdPlaceholder();
+    }
+
+    function updateCicdMigTag() {
+      const platform = document.getElementById('cicdMigTarget').value;
+      document.getElementById('cicdLangTag').textContent = cicdLangTagMap[platform] || 'YAML';
+    }
+
+    /* CI/CD History */
+    function pushCicdHistory(prompt, platform, type, result) {
+      cicdHistory.unshift({ prompt, platform, type, result, ts: Date.now() });
+      if (cicdHistory.length > 10) cicdHistory.pop();
+      cicdActiveIndex = 0;
+      saveCicdHistory();
+      renderCicdHistoryList();
+    }
+
+    function clearCicdHistory(e) {
+      e.stopPropagation();
+      cicdHistory.length = 0;
+      cicdActiveIndex = -1;
+      saveCicdHistory();
+      renderCicdHistoryList();
+    }
+
+    function renderCicdHistoryList() {
+      const list    = document.getElementById('cicdHistoryList');
+      const countEl = document.getElementById('cicdHistoryCount');
+      const emptyEl = document.getElementById('cicdHistoryEmpty');
+      countEl.textContent   = cicdHistory.length;
+      countEl.style.display = cicdHistory.length > 0 ? 'inline' : 'none';
+      document.getElementById('cicdHistoryClearBtn').style.display = cicdHistory.length > 0 ? 'inline' : 'none';
+      list.querySelectorAll('.history-item').forEach(el => el.remove());
+      if (cicdHistory.length === 0) { emptyEl.style.display = 'block'; return; }
+      emptyEl.style.display = 'none';
+      cicdHistory.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'history-item' + (i === cicdActiveIndex ? ' active' : '');
+        el.onclick   = () => loadCicdHistory(i);
+        const head = escHtml(item.prompt.slice(0, 40));
+        const tail = item.prompt.length > 40 ? escHtml(item.prompt.slice(40)) : '';
+        const cssClass = cicdBadgeCssMap[item.platform] || 'gha';
+        const label    = cicdBadgeMap[item.platform] || item.platform.toUpperCase();
+        const typeTag  = item.type === 'mig' ? '<span class="history-badge badge-mig" style="margin-left:2px;">MIG</span>' : '';
+        el.innerHTML =
+          `<div class="history-item-top">
+            <span class="history-badge badge-${cssClass}">${label}</span>${typeTag}
+            <span class="history-time">${timeAgo(item.ts)}</span>
+          </div>
+          <div class="history-prompt"><span class="history-prompt-bold">${head}</span>${tail ? `<span class="history-prompt-rest">${tail}</span>` : ''}</div>`;
+        list.appendChild(el);
+      });
+    }
+
+    function loadCicdHistory(i) {
+      cicdActiveIndex = i;
+      const item = cicdHistory[i];
+      if (item.type === 'gen') {
+        switchCicdTab('gen');
+        document.getElementById('cicdPlatform').value = item.platform;
+        document.getElementById('cicdInput').value    = item.prompt;
+        updateCicdPlaceholder();
+      } else {
+        switchCicdTab('mig');
+        document.getElementById('cicdMigInput').value  = item.prompt;
+        document.getElementById('cicdMigTarget').value = item.platform;
+        updateCicdMigTag();
+        updateDetectBadge(item.prompt);
+      }
+      cicdRenderCode(item.result, item.platform);
+      renderCicdHistoryList();
+      setStatus('Loaded from history.', 'success');
+    }
+
+    function toggleCicdHistory() {
+      cicdHistoryOpen = !cicdHistoryOpen;
+      document.getElementById('cicdHistoryList').classList.toggle('open', cicdHistoryOpen);
+      document.getElementById('cicdHistoryChevron').classList.toggle('open', cicdHistoryOpen);
+    }
+
+    function saveCicdHistory() {
+      try { localStorage.setItem(CICD_STORAGE_KEY, JSON.stringify(cicdHistory)); } catch {}
+    }
+
+    function loadStoredCicdHistory() {
+      try { const stored = JSON.parse(localStorage.getItem(CICD_STORAGE_KEY) || '[]'); cicdHistory.push(...stored); } catch {}
+      renderCicdHistoryList();
+    }
+
+    function updateCicdPlaceholder() {
+      const platform = document.getElementById('cicdPlatform').value;
+      document.getElementById('cicdInput').placeholder =
+        'Describe the CI/CD pipeline you want to generate…\n\n' + (cicdGenPlaceholderMap[platform] || '');
+      document.getElementById('cicdLangTag').textContent = cicdLangTagMap[platform] || 'YAML';
+    }
+
+    /* Pipeline type auto-detection */
+    function detectPipelineType(code) {
+      if (!code || !code.trim()) return null;
+      if (/^\s*pipeline\s*\{/m.test(code) || /^\s*node\s*\{/m.test(code)) return 'jenkins';
+      if (/^on:/m.test(code) && /^jobs:/m.test(code)) return 'github-actions';
+      if ((/^trigger:/m.test(code) || /^pr:/m.test(code)) && (/^pool:/m.test(code) || /^\s+- task:/m.test(code))) return 'azure-devops';
+      if (/\bdisplayName:/m.test(code) && /\bsteps:/m.test(code) && !/^jobs:/m.test(code)) return 'azure-devops';
+      if (/^stages:/m.test(code) && /^\s+script:/m.test(code) && !/^jobs:/m.test(code)) return 'gitlab-ci';
+      return null;
+    }
+
+    function updateDetectBadge(code) {
+      const detected = detectPipelineType(code);
+      const badge    = document.getElementById('detectBadge');
+      badge.textContent = detected ? platformDisplayNames[detected] : 'Unknown';
+      badge.className   = 'detect-badge' + (detected ? ' detected-' + detected : '');
+    }
+
+    /* CI/CD output helpers */
+    function cicdShowPlaceholder() {
+      document.getElementById('cicdPlaceholder').style.display  = 'flex';
+      document.getElementById('cicdSkeleton').style.display     = 'none';
+      document.getElementById('cicdOutputPre').style.display    = 'none';
+      document.getElementById('cicdDownloadBtn').disabled       = true;
+      document.getElementById('cicdMigDownloadBtn').disabled    = true;
+    }
+
+    function cicdShowSkeleton() {
+      document.getElementById('cicdPlaceholder').style.display = 'none';
+      document.getElementById('cicdSkeleton').style.display    = 'flex';
+      document.getElementById('cicdOutputPre').style.display   = 'none';
+    }
+
+    function cicdShowStreaming(platform) {
+      document.getElementById('cicdPlaceholder').style.display = 'none';
+      document.getElementById('cicdSkeleton').style.display    = 'none';
+      const pre    = document.getElementById('cicdOutputPre');
+      const codeEl = document.getElementById('cicdCodeEl');
+      pre.style.display  = 'block';
+      codeEl.textContent = '';
+      codeEl.className   = 'language-' + (cicdLangMap[platform] || 'yaml');
+      codeEl.removeAttribute('data-highlighted');
+    }
+
+    function cicdRenderCode(code, platform) {
+      const lang   = cicdLangMap[platform] || 'yaml';
+      const codeEl = document.getElementById('cicdCodeEl');
+      codeEl.textContent = code;
+      codeEl.className   = 'language-' + lang;
+      codeEl.removeAttribute('data-highlighted');
+      hljs.highlightElement(codeEl);
+      hljs.lineNumbersBlock(codeEl);
+      document.getElementById('cicdPlaceholder').style.display  = 'none';
+      document.getElementById('cicdSkeleton').style.display     = 'none';
+      document.getElementById('cicdOutputPre').style.display    = 'block';
+      document.getElementById('cicdLangTag').textContent        = cicdLangTagMap[platform] || 'YAML';
+      cicdLastCode     = code;
+      cicdLastPlatform = platform;
+      document.getElementById('cicdDownloadBtn').disabled    = false;
+      document.getElementById('cicdMigDownloadBtn').disabled = false;
+    }
+
+    function cicdResetOutput() {
+      cicdLastCode = ''; cicdLastPlatform = '';
+      cicdShowPlaceholder();
+    }
+
+    function setCicdBusy(busy) {
+      document.getElementById('cicdGenBtn').disabled = busy;
+      document.getElementById('cicdMigBtn').disabled = busy;
+    }
+
+    /* CI/CD Generate (streaming) */
+    async function cicdGenerate() {
+      const prompt   = document.getElementById('cicdInput').value.trim();
+      if (!prompt) { setStatus('Please enter a prompt.', 'error'); return; }
+
+      const platform = document.getElementById('cicdPlatform').value;
+      const model    = document.getElementById('cicdModelSelect').value;
+
+      setCicdBusy(true);
+      document.getElementById('cicdGenSpinner').style.display = 'block';
+      document.getElementById('cicdGenBtnText').textContent   = 'Generating…';
+      setStatus('Generating pipeline…', 'loading');
+      cicdShowStreaming(platform);
+
+      const pre    = document.getElementById('cicdOutputPre');
+      const codeEl = document.getElementById('cicdCodeEl');
+      let fullCode = '';
+
+      try {
+        const res = await fetch(API_BASE + '/cicd/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, platform, model })
+        });
+
+        if (!res.ok) {
+          let errMsg = `HTTP ${res.status}`;
+          try { const b = await res.json(); errMsg = b.error || b.message || errMsg; } catch {}
+          throw new Error(errMsg);
+        }
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let   buffer  = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') continue;
+            let parsed;
+            try { parsed = JSON.parse(raw); } catch { continue; }
+            if (parsed.error) throw new Error(parsed.error);
+            const delta = parsed.choices?.[0]?.delta?.content ?? '';
+            if (delta) { fullCode += delta; codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }
+          }
+        }
+
+        fullCode = fullCode.replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/, '').trim();
+        if (!fullCode) throw new Error('No pipeline was returned.');
+        cicdRenderCode(fullCode, platform);
+        pushCicdHistory(prompt, platform, 'gen', fullCode);
+        setStatus('Pipeline generated successfully.', 'success');
+      } catch (err) {
+        cicdShowPlaceholder();
+        setStatus(err.message || 'Request failed.', 'error');
+      } finally {
+        setCicdBusy(false);
+        document.getElementById('cicdGenSpinner').style.display = 'none';
+        document.getElementById('cicdGenBtnText').textContent   = 'Generate Pipeline';
+      }
+    }
+
+    /* CI/CD Migrate */
+    async function cicdMigrate() {
+      const code = document.getElementById('cicdMigInput').value.trim();
+      if (!code) { setStatus('Please provide or upload pipeline code to migrate.', 'error'); return; }
+
+      const sourcePlatform = detectPipelineType(code) || 'auto';
+      const targetPlatform = document.getElementById('cicdMigTarget').value;
+      const model          = document.getElementById('cicdMigModelSelect').value;
+
+      if (sourcePlatform !== 'auto' && sourcePlatform === targetPlatform) {
+        setStatus('Source and target platforms are the same. Please select a different target.', 'error');
+        return;
+      }
+
+      setCicdBusy(true);
+      document.getElementById('cicdMigSpinner').style.display = 'block';
+      document.getElementById('cicdMigBtnText').textContent   = 'Migrating…';
+      setStatus('Migrating pipeline…', 'loading');
+      cicdShowSkeleton();
+
+      try {
+        const res  = await fetch(API_BASE + '/cicd/migrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, sourcePlatform, targetPlatform, model })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        cicdRenderCode(data.result, targetPlatform);
+        pushCicdHistory(code.slice(0, 80).replace(/\n/g, ' '), targetPlatform, 'mig', data.result);
+        setStatus('Pipeline migrated successfully.', 'success');
+      } catch (err) {
+        cicdShowPlaceholder();
+        setStatus(err.message || 'Migration failed.', 'error');
+      } finally {
+        setCicdBusy(false);
+        document.getElementById('cicdMigSpinner').style.display = 'none';
+        document.getElementById('cicdMigBtnText').textContent   = 'Migrate Pipeline';
+      }
+    }
+
+    /* File upload */
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        document.getElementById('cicdMigInput').value = content;
+        updateDetectBadge(content);
+        const n = content.length;
+        const cc = document.getElementById('cicdMigCharCounter');
+        cc.textContent = n.toLocaleString() + ' chars';
+        cc.className   = 'char-counter' + (n > 4000 ? ' over' : n > 3000 ? ' warn' : '');
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    /* Drag & drop on upload zone */
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('click', () => document.getElementById('fileUpload').click());
+    uploadZone.addEventListener('dragover',  (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target.result;
+        document.getElementById('cicdMigInput').value = content;
+        updateDetectBadge(content);
+      };
+      reader.readAsText(file);
+    });
+
+    /* Migrate input: live detection + char counter */
+    const cicdMigInputEl = document.getElementById('cicdMigInput');
+    cicdMigInputEl.addEventListener('input', () => {
+      updateDetectBadge(cicdMigInputEl.value);
+      const n  = cicdMigInputEl.value.length;
+      const cc = document.getElementById('cicdMigCharCounter');
+      cc.textContent = n.toLocaleString() + ' chars';
+      cc.className   = 'char-counter' + (n > 4000 ? ' over' : n > 3000 ? ' warn' : '');
+    });
+
+    /* CI/CD gen char counter + Ctrl+Enter */
+    const cicdInputEl = document.getElementById('cicdInput');
+    cicdInputEl.addEventListener('input', () => {
+      const n  = cicdInputEl.value.length;
+      const cc = document.getElementById('cicdCharCounter');
+      cc.textContent = n.toLocaleString() + ' chars';
+      cc.className   = 'char-counter' + (n > 2000 ? ' over' : n > 1500 ? ' warn' : '');
+    });
+    cicdInputEl.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); cicdGenerate(); }
+    });
+    document.getElementById('cicdShortcutHint').textContent = isMac ? '⌘↵' : 'Ctrl↵';
+
+    /* CI/CD Copy & Download */
+    function cicdCopy() {
+      if (!cicdLastCode) return;
+      navigator.clipboard.writeText(cicdLastCode).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.textContent = 'Pipeline copied!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+      });
+    }
+
+    function cicdDownload() {
+      if (!cicdLastCode) { setStatus('No content to download.', 'error'); return; }
+      triggerDownload(cicdLastCode, `pipeline.${cicdExtMap[cicdLastPlatform] || 'yml'}`);
+    }
+
+    /* ── Init ── */
+    updateLangTag();
+    updateCicdPlaceholder();
+    loadStoredHistory();
+    loadStoredCicdHistory();
+    setInterval(renderHistoryList, 30_000);
+    setInterval(renderCicdHistoryList, 30_000);
   </script>
-<div id="copyToast" class="copy-toast">Copied!</div>
-<div id="statusToast" class="status-toast">
-  <div class="status-toast-spinner"></div>
-  <span id="statusToastText"></span>
-</div>
+
+  <div id="copyToast" class="copy-toast">Copied!</div>
+  <div id="statusToast" class="status-toast">
+    <div class="status-toast-spinner"></div>
+    <span id="statusToastText"></span>
+  </div>
+
 </body>
 </html>
