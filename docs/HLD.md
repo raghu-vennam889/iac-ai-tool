@@ -1,10 +1,13 @@
-# IaC AI Tool — High Level Design (HLD)
+# IaC & CI/CD AI Tool — High Level Design (HLD)
 
 ---
 
 ## 1. Overview
 
-**IaC AI Tool** is a browser-based, single-page application that uses large language models (LLMs) to generate, explain, and migrate Infrastructure-as-Code (IaC) files. A user describes what infrastructure they need in plain English; the tool returns production-ready Terraform, YAML, JSON, or Shell Script output in real time.
+**IaC & CI/CD AI Tool** is a browser-based, single-page application that uses large language models (LLMs) to generate, explain, and migrate Infrastructure-as-Code (IaC) files **and** CI/CD pipeline configurations. Users write prompts in plain English; the tool returns production-ready code in real time via two distinct modes:
+
+- **IaC Generator** — Terraform, YAML, Shell Script, ARM Templates, CloudFormation
+- **CI/CD Generator** — Azure DevOps, GitHub Actions, GitLab CI, Jenkins pipelines (generate + migrate)
 
 ---
 
@@ -12,12 +15,16 @@
 
 | Goal | Description |
 |------|-------------|
-| Code generation | Produce production-ready IaC from a natural-language prompt |
-| Code explanation | Explain any generated code in structured, readable prose |
-| Pipeline migration | Convert Azure DevOps YAML pipelines to GitHub Actions or Jenkins |
+| IaC code generation | Produce production-ready IaC from a natural-language prompt (streaming) |
+| IaC code explanation | Explain any generated code in structured, readable prose |
+| CI/CD pipeline generation | Generate pipelines for Azure DevOps, GitHub Actions, GitLab CI, and Jenkins |
+| CI/CD pipeline migration | Convert any pipeline format to any other (4 × 4 platform matrix) |
+| Pipeline file upload | Drag-and-drop or paste a pipeline file; auto-detect its source platform |
 | Multi-model support | Allow the user to pick from 12 models across 5 AI providers |
-| Multi-format support | Generate Terraform, YAML, JSON, Shell Script, ARM Templates, and CloudFormation |
+| Multi-format IaC | Generate Terraform, YAML, Shell Script, ARM Templates, and CloudFormation |
+| Session history | Separate persistent history panels for IaC and CI/CD outputs |
 | Zero build tooling | Run with a single `node server.js` — no webpack, no bundler |
+| Cloud deployment | Deploy to Azure App Service (Windows) via IIS + iisnode |
 
 ---
 
@@ -31,14 +38,21 @@
 │       │                                                  │
 │   Fetch API (SSE streaming + JSON requests)              │
 └───────────────────────┬─────────────────────────────────┘
-                        │ HTTP  (localhost:3000)
+                        │ HTTP  (localhost:3000 or Azure)
+┌───────────────────────▼─────────────────────────────────┐
+│   IIS + iisnode (Azure App Service Windows)  [optional]  │
+│   web.config routes all requests → server.js             │
+└───────────────────────┬─────────────────────────────────┘
+                        │
 ┌───────────────────────▼─────────────────────────────────┐
 │               Node.js / Express  (server.js)             │
 │                                                          │
 │   POST /generate/stream  ── streaming proxy (SSE)        │
 │   POST /generate         ── non-streaming (code+explain) │
 │   POST /explain          ── explain existing code        │
-│   POST /migrate          ── pipeline migration           │
+│   POST /migrate          ── legacy ADO→GHA/Jenkins       │
+│   POST /cicd/generate    ── CI/CD pipeline (SSE)         │
+│   POST /cicd/migrate     ── pipeline format conversion   │
 │                                                          │
 │   Rate limiter: 30 req / 15 min per IP                   │
 └───────────────────────┬─────────────────────────────────┘
@@ -52,10 +66,11 @@
 ```
 
 **Communication pattern:**
-- Generate → streaming (Server-Sent Events via `ReadableStream`)
-- Explain Code (fresh) → single HTTP POST, JSON response with two keys
-- Explain Code (existing) → single HTTP POST, JSON response
-- Migrate → single HTTP POST, JSON response
+- IaC Generate → streaming (Server-Sent Events via `ReadableStream`)
+- IaC Explain Code (fresh) → single HTTP POST, JSON response with two keys
+- IaC Explain Code (existing) → single HTTP POST, JSON response
+- IaC Migrate / CI/CD Migrate → single HTTP POST, JSON response
+- CI/CD Generate → streaming (Server-Sent Events)
 
 ---
 
@@ -74,46 +89,60 @@
 | Line numbers | highlightjs-line-numbers (CDN) | 2.8.0 |
 | Markdown rendering | marked (CDN) | 9.x |
 | AI backend | GitHub Models / Azure AI Inference | — |
+| IIS adapter (Azure) | iisnode | — |
 
 ---
 
 ## 5. Key Features
 
-### 5.1 Code Generation (Streaming)
-The primary flow. The user writes a prompt, selects a file type and model, and clicks **Generate** (or presses `Ctrl+Enter`). Tokens stream to the browser in real time via Server-Sent Events, appearing character-by-character in the output panel. On completion, the code is syntax-highlighted with line numbers.
+### 5.1 Dual-Mode UI
 
-Six file types are supported:
+The UI is split into two top-level modes switched via a navigation bar:
+
+- **IaC Generator** — generates, explains, and edits IaC files
+- **CI/CD Generator** — generates and migrates CI/CD pipeline files
+
+Each mode has its own left input panel, output panel, and history section. Switching modes resets the output area.
+
+### 5.2 IaC Code Generation (Streaming)
+
+The primary IaC flow. Tokens stream to the browser in real time via Server-Sent Events. On completion, the code is syntax-highlighted with line numbers.
+
+Five file types are supported:
 
 | File Type | Value | Output | Description |
 |-----------|-------|--------|-------------|
 | Terraform | `tf` | `.tf` | HCL-syntax Terraform modules |
-| YAML | `yaml` | `.yaml` | Pipeline configs, Kubernetes manifests, Ansible playbooks |
-| JSON | `json` | `.json` | Generic JSON configuration |
+| YAML | `yaml` | `.yaml` | Kubernetes manifests, Ansible playbooks |
 | Shell Script | `sh` | `.sh` | Bash scripts with `#!/bin/bash` |
 | ARM Template | `arm` | `.json` | Azure Resource Manager JSON templates |
 | CloudFormation | `cfn` | `.yaml` | AWS CloudFormation YAML templates |
 
-### 5.2 Explain Code
+> JSON was removed as a standalone file type; ARM Template covers JSON-based Azure resource definitions.
+
+### 5.3 IaC Explain Code
+
 Two sub-modes:
 - **No existing code** — a single API call returns both code and a Markdown explanation simultaneously.
-- **Existing code** — the current code in the output panel is sent to a dedicated `/explain` endpoint and the explanation is rendered in the Explanation tab.
+- **Existing code** — the current code in the output panel is sent to a dedicated `/explain` endpoint.
 
-### 5.3 Pipeline Migration
-Available only when the current file type is YAML. A second select allows the user to choose the target platform (GitHub Actions or Jenkins). The migration runs as a separate API call and renders in the Migration tab.
+### 5.4 IaC Multi-Model Selection
 
-### 5.4 Multi-Model Selection
-13 models from 5 providers are available via a grouped `<select>`. All route through the same Azure AI Inference endpoint using the `GITHUB_TOKEN` credential. DeepSeek-V3 uses the non-streaming path because it does not support SSE on this endpoint.
+12 models from 5 providers available via a grouped `<select>`. DeepSeek-V3 uses the non-streaming path because it does not support SSE on this endpoint.
 
-### 5.5 Session History
-Up to 10 recent generations are stored in `localStorage` under the key `iac-gen-history`. Each entry stores the prompt, file type, code, explanation (if generated), and timestamp. The history panel is collapsible, supports click-to-restore, and timestamps refresh every 30 seconds.
+### 5.5 IaC Session History
 
-### 5.6 In-Place Code Editing
-The output code can be edited directly in the browser. An **Edit** button swaps the syntax-highlighted `<pre>` for a raw `<textarea>`. **Done** re-highlights the edited content and persists it back to the history entry.
+Up to 10 recent generations stored in `localStorage` under `iac-gen-history`. Each entry stores prompt, file type, code, explanation (if any), and timestamp. Collapsible, click-to-restore, timestamps refresh every 30 seconds.
 
-### 5.7 Auto File-Type Detection
-As the user types in the prompt textarea, a debounced (300 ms) regex engine scans the text and automatically switches the file type selector to the best match. A glow animation and "auto" badge confirm the switch visually.
+### 5.6 IaC In-Place Code Editing
 
-Detection rules (evaluated in priority order, first match wins):
+The output code can be edited directly in the browser. **Edit** swaps the highlighted view for a raw `<textarea>`; **Done** re-highlights and persists the edit back to the history entry.
+
+### 5.7 IaC Auto File-Type Detection
+
+As the user types, a debounced (300 ms) regex engine auto-switches the file type selector. A glow animation and "auto" badge confirm the switch.
+
+Detection rules (priority order):
 
 | Priority | Type | Trigger keywords |
 |----------|------|-----------------|
@@ -121,12 +150,46 @@ Detection rules (evaluated in priority order, first match wins):
 | 2 | `arm` | arm template, azure resource manager, azure arm, arm |
 | 3 | `cfn` | cloudformation, cfn, cloud formation, aws template/stack/resource |
 | 4 | `yaml` | yaml, pipeline, github actions, ci/cd, kubernetes, helm, ansible, … |
-| 5 | `json` | json, package.json, appsettings |
-| 6 | `sh` | shell script, bash script, bash, shell, script, zsh |
+| 5 | `sh` | shell script, bash script, bash, shell, script, zsh |
 
-### 5.8 Download and Copy
-- **Copy** copies the active tab's content to the clipboard and shows a toast.
-- **Download** saves the active tab's content as a file with the correct extension (`.tf`, `.yaml`, `.json`, `.sh`, `.yml`, `.groovy`).
+### 5.8 CI/CD Pipeline Generation (Streaming)
+
+Users describe the pipeline in plain English; the tool generates a production-ready pipeline YAML or Jenkinsfile via streaming SSE. Four target platforms are supported:
+
+| Platform | Output format |
+|----------|--------------|
+| Azure DevOps | `azure-pipelines.yml` |
+| GitHub Actions | `.github/workflows/pipeline.yml` |
+| GitLab CI | `.gitlab-ci.yml` |
+| Jenkins | `Jenkinsfile` (Declarative Pipeline) |
+
+Each platform has a dedicated system prompt with idiomatic syntax rules and built-in task recommendations.
+
+### 5.9 CI/CD Pipeline Migration
+
+Users upload or paste an existing pipeline; the tool converts it to any of the four supported platforms.
+
+**Source detection:** Client-side regex analysis identifies the source platform in real time as the user types or uploads, displaying an inline colour-coded badge:
+
+| Platform | Detection signals |
+|----------|-----------------|
+| Jenkins | `pipeline {` block |
+| GitHub Actions | Top-level `on:` + `jobs:` |
+| Azure DevOps | Top-level `trigger:` + `pool:` |
+| GitLab CI | Top-level `stages:` + `script:` without `jobs:` |
+
+If detection is inconclusive, source defaults to `"auto"` and the model auto-detects from the content.
+
+**File upload:** Drag-and-drop or click-to-browse accepts `.yaml`, `.yml`, `.groovy`, `Jenkinsfile`, `.json`, `.txt`. The file content is loaded into the paste textarea and detection runs immediately.
+
+### 5.10 CI/CD Session History
+
+Separate from IaC history. Up to 10 entries stored under `cicd-gen-history`. Each entry records the prompt/source snippet, target platform, type (generate vs migrate), result, and timestamp. Platform badges (ADO / GHA / GL CI / JENKINS) and a MIG indicator for migrations.
+
+### 5.11 Download and Copy
+
+- **Copy** copies the active output to the clipboard.
+- **Download** saves with the correct extension (`.tf`, `.yaml`, `.yml`, `.sh`, `.json`, `.groovy`).
 
 ---
 
@@ -134,31 +197,30 @@ Detection rules (evaluated in priority order, first match wins):
 
 | Concern | Mitigation |
 |---------|-----------|
-| Token exposure | `GITHUB_TOKEN` lives in `.env`, listed in `.gitignore`, never sent to the browser |
+| Token exposure | `GITHUB_TOKEN` lives in `.env`, git-ignored, never sent to the browser |
 | Model injection | `ALLOWED_MODELS` allowlist on the server rejects unknown model IDs |
-| File type injection | `ALLOWED_FILE_TYPES` set rejects anything outside `tf`, `yaml`, `json`, `sh`, `arm`, `cfn` |
+| IaC file type injection | `ALLOWED_FILE_TYPES` set: `tf`, `yaml`, `sh`, `arm`, `cfn` |
+| CI/CD platform injection | `ALLOWED_CICD_PLATFORMS` set: `github-actions`, `azure-devops`, `gitlab-ci`, `jenkins` |
 | Input length abuse | `MAX_INPUT_LEN = 4000` and `MAX_CODE_LEN = 8000` enforced server-side |
-| Request flooding | Rate limiter: 30 requests per 15-minute window per IP |
-| Migration target injection | `ALLOWED_MIGRATE_TARGETS` rejects anything outside `github-actions`, `jenkins` |
+| Request flooding | Rate limiter: 30 requests per 15-minute window per IP (applied to all AI routes) |
 | XSS in history | All user-supplied text passed through `escHtml()` before DOM insertion |
 
 ---
 
-## 7. Data Flow — Primary Generate Path
+## 7. Data Flow — IaC Generate Path
 
 ```
 User types prompt
        │
        ▼
-300ms debounce → detectAndApplyFileType()   [auto file-type switch]
+300ms debounce → detectAndApplyFileType()
        │
 User clicks Generate (or Ctrl+Enter)
        │
        ▼
 generate() [client]
-  ├── setBusy(true)          disable all buttons
-  ├── showExplainSkeleton()  explanation tab shows shimmer
-  ├── clear code panel       show raw token stream immediately
+  ├── setBusy(true)
+  ├── clearExplanation()
   └── fetch POST /generate/stream
              │
              ▼
@@ -168,76 +230,136 @@ generate() [client]
         └── axios POST → Azure AI Inference (stream: true)
                    │ SSE chunks
                    ▼
-             pipe back to browser via res.write()
-                   │
-             ▼ (browser ReadableStream reader)
-        delta tokens → append to <code> element live
+             pipe back to browser
+                   │ delta tokens → append to <code> element live
                    │
              ▼ (on [DONE])
         renderCode(fullCode, fileType)
           ├── hljs.highlightElement()
           ├── hljs.lineNumbersBlock()
-          ├── pushHistory()
-          └── updateDownloadBtn()  enable Download
+          └── pushHistory()
+```
+
+## 8. Data Flow — CI/CD Generate Path
+
+```
+User describes pipeline + selects platform
+       │
+User clicks Generate Pipeline
        │
        ▼
-setBusy(false) + success toast
+cicdGenerate() [client]
+  └── fetch POST /cicd/generate (SSE)
+             │
+             ▼
+      server.js /cicd/generate
+        ├── validates prompt, platform in ALLOWED_CICD_PLATFORMS
+        ├── buildCICDGenerationPrompt(platform)
+        └── axios POST → Azure AI Inference (stream: true)
+                   │ SSE tokens
+                   ▼
+             pipe back to browser
+                   │ live token append
+                   ▼
+        cicdRenderCode(fullCode, platform)
+          └── pushCicdHistory()
+```
+
+## 9. Data Flow — CI/CD Migrate Path
+
+```
+User uploads / pastes pipeline code
+       │
+       ▼
+updateDetectBadge() → detectPipelineType() [client-side regex]
+  Shows colour-coded badge (Jenkins / GHA / ADO / GL CI / Unknown)
+       │
+User selects target platform + clicks Migrate Pipeline
+       │
+       ▼
+cicdMigrate() [client]
+  └── fetch POST /cicd/migrate
+             │
+             ▼
+      server.js /cicd/migrate
+        ├── validates code, targetPlatform
+        ├── sourcePlatform = detected || 'auto'
+        ├── buildCICDMigrationPrompt(source, target)
+        └── axios POST → Azure AI Inference (non-streaming)
+                   │ full response
+                   ▼
+        strip markdown fences
+        res.json({ result, targetPlatform })
+                   │
+                   ▼
+        cicdRenderCode(result, targetPlatform)
+          └── pushCicdHistory()
 ```
 
 ---
 
-## 8. Deployment
+## 10. Deployment
 
 ### Local (development)
 ```bash
-# 1. Clone the repository
 git clone <repo-url>
 cd iac-ai-tool
-
-# 2. Install dependencies
 npm install
-
-# 3. Create .env with your GitHub PAT (Models scope required)
 echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxx" > .env
-
-# 4. Start the server
 npm start
 # → Running on http://localhost:3000
 ```
+
+### Azure App Service (Windows)
+
+The tool is deployable to Azure App Service (Windows) using the iisnode module. IIS acts as a reverse proxy, forwarding all HTTP requests to the Node.js process via `web.config`.
+
+**Required files:**
+- `web.config` — configures iisnode handler and URL rewrite rules
+- `GITHUB_TOKEN` — set as an Application Setting (Environment Variable) in the Azure portal
+
+**`web.config` key rules:**
+1. Register `iisnode` handler for `server.js`
+2. URL rewrite: all requests → `server.js`
+3. `httpErrors existingResponse="PassThrough"` — lets Express send its own error responses
+
+**Dynamic port:** The server reads `process.env.PORT || 3000`. Azure App Service injects the correct IPC port via `process.env.PORT`; the application does not need a hardcoded port.
+
+**Dynamic API_BASE:** The frontend sets `API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : ''`. In production, API calls use relative URLs, which are resolved by the same IIS/iisnode host.
 
 ### Environment variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GITHUB_TOKEN` | Yes | GitHub Personal Access Token with Models scope |
-
-### Port
-The server listens on **port 3000** (hardcoded). The frontend has `API_BASE = 'http://localhost:3000'` hardcoded and must be updated for any non-local deployment.
+| `PORT` | No (injected by Azure) | Server port; defaults to 3000 locally |
 
 ---
 
-## 9. Limitations
+## 11. Limitations
 
-- **Local only** — `API_BASE` is hardcoded to `localhost:3000`; production deployment requires changing this constant.
-- **No authentication** — any user on the local network who can reach port 3000 can use the tool.
+- **No authentication** — any user who can reach the server can use the tool and consume the GitHub token quota.
 - **No persistent storage** — history is browser-local (`localStorage`); clearing browser data loses history.
 - **No retry logic** — failed requests surface a toast; the user must retry manually.
-- **DeepSeek non-streaming** — DeepSeek-V3 does not support SSE on this endpoint so it falls back to the blocking `/generate` path.
+- **DeepSeek non-streaming** — DeepSeek-V3 does not support SSE on this endpoint; it falls back to the blocking path.
+- **CI/CD migration non-streaming** — the `/cicd/migrate` endpoint is non-streaming (full response); output appears all at once.
 
 ---
 
-## 10. File Structure
+## 12. File Structure
 
 ```
 iac-ai-tool/
-├── index.html        Single-page frontend (HTML + CSS + JS, ~1485 lines)
-├── server.js         Express API server (~259 lines)
-├── prompts.js        System prompt definitions and builders (~69 lines)
+├── index.html        Single-page frontend (HTML + CSS + JS)
+├── server.js         Express API server
+├── prompts.js        System prompt definitions and builders
 ├── package.json      Node.js project manifest
-├── package-lock.json Lockfile (40 transitive dependencies)
+├── package-lock.json Lockfile
+├── web.config        IIS + iisnode configuration (Azure App Service)
 ├── .env              GITHUB_TOKEN (git-ignored)
 ├── .gitignore        Excludes node_modules/ and .env
 └── docs/
     ├── HLD.md        This document
-    └── LLD.md        Low-level design document
+    ├── LLD.md        Low-level design document
+    └── PROCESS.md    User-facing process and workflow guide
 ```

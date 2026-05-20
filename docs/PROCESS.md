@@ -1,4 +1,4 @@
-# IaC AI Tool — Process Document
+# IaC & CI/CD AI Tool — Process Document
 
 ---
 
@@ -10,13 +10,17 @@
 4. [Starting and Stopping the Tool](#4-starting-and-stopping-the-tool)
 5. [Using the Tool — Step-by-Step Workflows](#5-using-the-tool--step-by-step-workflows)
    - 5.1 [Generate IaC Code](#51-generate-iac-code)
-   - 5.2 [Generate Code with Explanation](#52-generate-code-with-explanation)
-   - 5.3 [Explain Existing Code](#53-explain-existing-code)
-   - 5.4 [Migrate a Pipeline](#54-migrate-a-pipeline)
-   - 5.5 [Edit Generated Code In-Browser](#55-edit-generated-code-in-browser)
-   - 5.6 [Download or Copy Output](#56-download-or-copy-output)
-   - 5.7 [Restore a Previous Generation](#57-restore-a-previous-generation)
-   - 5.8 [Clear History](#58-clear-history)
+   - 5.2 [Generate IaC Code with Explanation](#52-generate-iac-code-with-explanation)
+   - 5.3 [Explain Existing IaC Code](#53-explain-existing-iac-code)
+   - 5.4 [Edit Generated Code In-Browser](#54-edit-generated-code-in-browser)
+   - 5.5 [Download or Copy Output](#55-download-or-copy-output)
+   - 5.6 [Restore a Previous IaC Generation](#56-restore-a-previous-iac-generation)
+   - 5.7 [Clear IaC History](#57-clear-iac-history)
+   - 5.8 [Migrate a Legacy Pipeline (IaC Mode)](#58-migrate-a-legacy-pipeline-iac-mode)
+   - 5.9 [Generate a CI/CD Pipeline](#59-generate-a-cicd-pipeline)
+   - 5.10 [Migrate a CI/CD Pipeline](#510-migrate-a-cicd-pipeline)
+   - 5.11 [Restore a Previous CI/CD Generation](#511-restore-a-previous-cicd-generation)
+   - 5.12 [Clear CI/CD History](#512-clear-cicd-history)
 6. [Choosing a Model](#6-choosing-a-model)
 7. [Keyboard Shortcuts](#7-keyboard-shortcuts)
 8. [Auto File-Type Detection](#8-auto-file-type-detection)
@@ -29,13 +33,21 @@
 
 ## 1. Purpose and Scope
 
-The **IaC AI Tool** is a local, browser-based application that generates, explains, and migrates Infrastructure-as-Code (IaC) files using large language models (LLMs). Users write prompts in plain English; the tool returns production-ready Terraform, YAML, JSON, or Shell Script output in real time.
+The **IaC & CI/CD AI Tool** is a local, browser-based application with two top-level modes:
+
+- **IaC Generator** — generates, explains, and edits Infrastructure-as-Code files from a plain-English prompt
+- **CI/CD Generator** — generates new CI/CD pipeline files and migrates existing pipelines between supported platforms
+
+Users write prompts in plain English; the tool returns production-ready code in real time via streaming or a single API call.
 
 **In scope:**
-- Generating new IaC files from a text description
-- Getting a Markdown explanation alongside generated code
-- Explaining code that already exists in the output panel
-- Migrating Azure DevOps YAML pipelines to GitHub Actions or Jenkins
+- Generating IaC files: Terraform, YAML, Shell Script, ARM Templates, CloudFormation
+- Getting a Markdown explanation alongside generated IaC code
+- Explaining IaC code already present in the output panel
+- Generating CI/CD pipelines: Azure DevOps, GitHub Actions, GitLab CI, Jenkins
+- Migrating CI/CD pipelines between any two of the four supported platforms
+- Uploading a pipeline file for migration (drag-and-drop or click-to-browse)
+- Persistent session history for both IaC and CI/CD outputs
 
 **Out of scope:**
 - Applying generated code directly to any cloud account
@@ -52,7 +64,7 @@ The **IaC AI Tool** is a local, browser-based application that generates, explai
 | **npm** | Bundled with Node.js |
 | **GitHub Personal Access Token (PAT)** | Must have the **Models** scope enabled |
 | **Internet access** | Required for AI model calls to `models.inference.ai.azure.com` |
-| **Modern browser** | Chrome, Edge, Firefox, or Safari (must support `ReadableStream` and `EventSource`) |
+| **Modern browser** | Chrome, Edge, Firefox, or Safari (must support `ReadableStream`) |
 
 ### Obtaining a GitHub Token
 
@@ -87,6 +99,7 @@ iac-ai-tool/
 ├── server.js         ← Express API server
 ├── prompts.js        ← System prompt definitions
 ├── package.json
+├── web.config        ← IIS/iisnode config (Azure App Service only)
 ├── .env              ← Your GITHUB_TOKEN (git-ignored)
 └── node_modules/     ← Created by npm install
 ```
@@ -119,43 +132,49 @@ npm start
 
 ## 5. Using the Tool — Step-by-Step Workflows
 
-### 5.1 Generate IaC Code
-
-This is the primary workflow. Tokens stream to the browser character-by-character as the model generates them.
-
-1. **Write a prompt** in the large text area (e.g., *"Create a Terraform module for an AWS S3 bucket with versioning and lifecycle rules"*).
-2. **Select a file type** from the **File Type** dropdown:
-   - `Terraform (.tf)`
-   - `YAML (.yaml)`
-   - `JSON (.json)`
-   - `Shell Script (.sh)`
-   > The file type may switch automatically as you type — see [Section 8](#8-auto-file-type-detection).
-3. **Select a model** from the **Model** dropdown (optional; defaults to `gpt-4o-mini`).
-4. Click **Generate** or press **Ctrl + Enter**.
-5. Watch tokens appear in the **Code** tab in real time.
-6. When complete, the code is syntax-highlighted with line numbers and a **Download** button becomes active.
+The tool opens in **IaC Generator** mode by default. Switch to **CI/CD Generator** using the navigation buttons at the top of the page.
 
 ---
 
-### 5.2 Generate Code with Explanation
+### 5.1 Generate IaC Code
+
+This is the primary IaC workflow. Tokens stream to the browser character-by-character as the model generates them.
+
+1. Ensure you are in **IaC Generator** mode (top navigation).
+2. **Write a prompt** in the large text area (e.g., *"Create a Terraform module for an AWS S3 bucket with versioning and lifecycle rules"*).
+3. **Select a file type** from the **File Type** dropdown:
+   - `Terraform (.tf)`
+   - `YAML (.yaml)`
+   - `Shell Script (.sh)`
+   - `ARM Template (.json)`
+   - `CloudFormation (.yaml)`
+   > The file type may switch automatically as you type — see [Section 8](#8-auto-file-type-detection).
+4. **Select a model** from the **Model** dropdown (optional; defaults to `gpt-4o-mini`).
+5. Click **Generate** or press **Ctrl + Enter**.
+6. Watch tokens appear in the **Code** tab in real time.
+7. When complete, the code is syntax-highlighted with line numbers and the **Download** button becomes active.
+
+---
+
+### 5.2 Generate IaC Code with Explanation
 
 Use this when you want the model to produce both the code **and** a structured Markdown explanation in a single call.
 
-1. Complete steps 1–3 from [Section 5.1](#51-generate-iac-code).
+1. Complete steps 1–4 from [Section 5.1](#51-generate-iac-code).
 2. Click **Explain Code** (not **Generate**).
-3. The tool calls `/generate` (non-streaming) with `explain: true`.
+3. The tool calls `/generate` with `explain: true` (non-streaming).
 4. The **Explanation** tab automatically becomes active and shows a shimmer skeleton while waiting.
 5. When the response arrives:
    - The **Code** tab displays syntax-highlighted code.
-   - The **Explanation** tab displays the Markdown-rendered explanation with section headers, bullet points, and readable prose.
+   - The **Explanation** tab displays the Markdown-rendered explanation with section headers and readable prose.
 
 ---
 
-### 5.3 Explain Existing Code
+### 5.3 Explain Existing IaC Code
 
 Use this when code is already in the **Code** tab and you want an explanation without regenerating it.
 
-**Precondition:** The Code tab must contain code (generated or manually pasted via the Edit flow).
+**Precondition:** The Code tab must contain code.
 
 1. Ensure the **Code** tab has content.
 2. Click **Explain Code**.
@@ -165,24 +184,7 @@ Use this when code is already in the **Code** tab and you want an explanation wi
 
 ---
 
-### 5.4 Migrate a Pipeline
-
-**Precondition:** The **File Type** must be set to `YAML (.yaml)`.
-
-1. Generate or paste an Azure DevOps YAML pipeline into the Code tab.
-2. Ensure **File Type** is `YAML`.
-3. A **Migrate to** dropdown appears — select either:
-   - `GitHub Actions`
-   - `Jenkins`
-4. Click **Migrate Pipeline**.
-5. The tool calls `/migrate`. A loading skeleton appears in the **Migration** tab.
-6. When complete, the Migration tab becomes active and displays the converted pipeline YAML (or Jenkinsfile).
-
-> **Note:** The Migration tab and **Migrate Pipeline** button are hidden when the file type is not YAML.
-
----
-
-### 5.5 Edit Generated Code In-Browser
+### 5.4 Edit Generated Code In-Browser
 
 1. After code has been generated, click the **Edit** button in the output panel toolbar.
 2. The syntax-highlighted view is replaced by an editable `<textarea>` containing the raw code.
@@ -193,7 +195,7 @@ Use this when code is already in the **Code** tab and you want an explanation wi
 
 ---
 
-### 5.6 Download or Copy Output
+### 5.5 Download or Copy Output
 
 #### Copy
 
@@ -205,49 +207,133 @@ Use this when code is already in the **Code** tab and you want an explanation wi
 
 1. Ensure the **Code** tab has content (the Download button is disabled when empty).
 2. Click **Download**.
-3. The active tab's content is saved as a file with the correct extension:
+3. The content is saved as a file with the correct extension:
 
 | File Type | Extension |
 |-----------|-----------|
 | Terraform | `.tf` |
 | YAML | `.yaml` |
-| JSON | `.json` |
 | Shell Script | `.sh` |
+| ARM Template | `.json` |
+| CloudFormation | `.yaml` |
 | Migrated GitHub Actions | `.yml` |
 | Migrated Jenkins | `.groovy` |
 
 ---
 
-### 5.7 Restore a Previous Generation
+### 5.6 Restore a Previous IaC Generation
 
-The tool automatically saves up to **10 recent generations** in browser `localStorage`.
+The tool automatically saves up to **10 recent IaC generations** in browser `localStorage`.
 
-1. Click **History** in the top-right to expand the history panel.
+1. Click **History** at the bottom of the IaC left panel to expand the history accordion.
 2. Each entry shows:
-   - A colored file-type badge (`TF`, `YAML`, `JSON`, `SH`)
+   - A colored file-type badge (`TF`, `YAML`, `SH`, `ARM`, `CFN`)
    - The timestamp (e.g., *2 min ago*, refreshed every 30 seconds)
    - The first ~40 characters of the prompt in bold, with the remainder in a lighter weight
-3. Click any entry to restore:
-   - The prompt text is populated in the input area.
-   - The code is rendered in the Code tab.
-   - The explanation (if any) is rendered in the Explanation tab.
-   - The file type selector is updated to match.
+3. Click any entry to restore the prompt, code, and explanation (if any).
 
 ---
 
-### 5.8 Clear History
+### 5.7 Clear IaC History
 
-1. Expand the **History** panel.
-2. Click **Clear History** (displayed at the bottom of the panel when entries exist).
+1. Expand the **History** panel in the IaC Generator.
+2. Click **Clear all** (displayed when entries exist).
 3. All entries are removed from `localStorage` and the panel is cleared.
 
-> **Warning:** This action is irreversible. Cleared history cannot be recovered.
+> **Warning:** This action is irreversible.
+
+---
+
+### 5.8 Migrate a Legacy Pipeline (IaC Mode)
+
+This is the legacy migration path. It converts an **Azure DevOps YAML** pipeline to either GitHub Actions or Jenkins. For full 4-platform migration support, use the CI/CD Generator mode (Section 5.10).
+
+**Precondition:** The **File Type** must be set to `YAML (.yaml)`.
+
+1. Generate or paste an Azure DevOps YAML pipeline into the Code tab.
+2. Ensure **File Type** is `YAML`.
+3. A **Migrate to** dropdown appears below the output panel — select either:
+   - `GitHub Actions`
+   - `Jenkins`
+4. Click **Migrate Pipeline**.
+5. A loading skeleton appears in the **Migration** tab.
+6. When complete, the Migration tab becomes active with the converted pipeline.
+
+---
+
+### 5.9 Generate a CI/CD Pipeline
+
+1. Click **CI/CD Generator** in the top navigation.
+2. Ensure the **Generate Pipeline** sub-tab is selected.
+3. **Select a target platform** from the **Platform** dropdown:
+   - `Azure DevOps`
+   - `GitHub Actions`
+   - `GitLab CI`
+   - `Jenkins`
+4. **Select a model** (optional; defaults to `gpt-4o-mini`).
+5. **Write a prompt** describing the pipeline (e.g., *"Node.js app — install, test, build Docker image, push to registry, deploy to staging on push to main"*).
+6. Click **Generate Pipeline**.
+7. Tokens stream into the output panel in real time.
+8. When complete, the pipeline is syntax-highlighted with line numbers.
+
+The output badge (`ADO`, `GHA`, `GL CI`, `JENKINS`) updates to reflect the selected platform.
+
+---
+
+### 5.10 Migrate a CI/CD Pipeline
+
+1. Click **CI/CD Generator** in the top navigation.
+2. Click the **Migrate Pipeline** sub-tab.
+3. **Select the target platform** from the **Migrate To** dropdown at the top of the panel.
+4. **Select a model** (optional).
+5. **Provide the source pipeline** using one of two methods:
+
+   **Method A — File upload:**
+   - Drag a pipeline file onto the upload zone, or click the zone to browse.
+   - Accepted file types: `.yaml`, `.yml`, `.groovy`, `Jenkinsfile`, `.json`, `.txt`.
+   - The file content loads into the paste area automatically.
+
+   **Method B — Paste:**
+   - Paste the pipeline code directly into the text area.
+
+6. As you type or after a file loads, a **Detected** badge appears inline beside the paste label showing the auto-detected source platform (`Jenkins`, `GHA`, `ADO`, `GL CI`, or `Unknown`).
+7. Click **Migrate Pipeline**.
+8. The tool calls `/cicd/migrate`. The converted pipeline appears in the output panel.
+9. If the source platform cannot be detected, the model auto-detects it from the code content.
+
+> **Note:** CI/CD migration is non-streaming — the output appears all at once after the model finishes.
+
+---
+
+### 5.11 Restore a Previous CI/CD Generation
+
+The CI/CD Generator maintains its own history, separate from the IaC Generator, storing up to **10 recent entries** in `localStorage`.
+
+1. Scroll down in the CI/CD left panel to find the **History** accordion.
+2. Each entry shows:
+   - A platform badge (`ADO`, `GHA`, `GL CI`, `JENKINS`)
+   - A `MIG` badge for migration entries
+   - A timestamp (refreshed every 30 seconds)
+   - The first ~40 characters of the prompt
+3. Click any entry to restore:
+   - **Generate entries** — restores the prompt, platform selection, and output; switches to the Generate sub-tab.
+   - **Migrate entries** — restores the source code, target platform, and output; switches to the Migrate sub-tab.
+
+---
+
+### 5.12 Clear CI/CD History
+
+1. Expand the **History** panel in the CI/CD Generator.
+2. Click **Clear all**.
+3. All CI/CD history entries are removed from `localStorage`.
+
+> **Warning:** This action is irreversible.
 
 ---
 
 ## 6. Choosing a Model
 
-Use the **Model** dropdown to select from 11 available models across 5 providers. All models route through the same Azure AI Inference endpoint using the `GITHUB_TOKEN` credential.
+Use the **Model** dropdown to select from 12 available models across 5 providers. Both the IaC Generator and the CI/CD Generator have their own model selector. All models route through the same Azure AI Inference endpoint using the `GITHUB_TOKEN` credential.
 
 | Provider | Model | Strengths | Streaming |
 |----------|-------|-----------|-----------|
@@ -264,41 +350,42 @@ Use the **Model** dropdown to select from 11 available models across 5 providers
 | **Microsoft** | `Phi-4` | Compact, efficient | Yes |
 | **DeepSeek** | `deepseek-v3` | Strong code generation | No (blocking fallback) |
 
-> **DeepSeek note:** DeepSeek-V3 does not support Server-Sent Events on this endpoint. The server automatically fetches the full response and sends it as a single batch, so output appears all at once rather than streaming character-by-character.
+> **DeepSeek note:** DeepSeek-V3 does not support Server-Sent Events on this endpoint. The server fetches the full response and sends it as a single batch — output appears all at once rather than streaming token-by-token.
 
 **General guidance:**
 - Use `gpt-4o-mini` for fast iteration and everyday tasks.
 - Use `gpt-4o` or `gpt-4.1` when output quality matters most.
-- Use `Codestral-2501` for code-heavy tasks such as complex shell scripts or Terraform modules.
-- Use `o3-mini` or `o4-mini` for multi-step reasoning (e.g., complex Kubernetes manifests with multiple interdependent resources).
+- Use `Codestral-2501` for code-heavy tasks such as complex Terraform modules or Jenkins pipelines.
+- Use `o3-mini` or `o4-mini` for multi-step reasoning (e.g., complex Kubernetes manifests with many interdependent resources).
 
 ---
 
 ## 7. Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + Enter` | Generate (same as clicking the Generate button) |
-| `Tab` / `Shift+Tab` | Navigate between Code / Explanation / Migration tabs |
-| `Enter` / `Space` | Activate the focused tab |
+| Shortcut | Context | Action |
+|----------|---------|--------|
+| `Ctrl + Enter` / `Cmd + Enter` | IaC prompt textarea focused | Triggers Generate |
+| `ArrowRight` | IaC output tab bar focused | Move to next enabled tab |
+| `ArrowLeft` | IaC output tab bar focused | Move to previous enabled tab |
 
 ---
 
 ## 8. Auto File-Type Detection
 
-As you type in the prompt textarea, the tool runs a debounced (300 ms) keyword scan and automatically switches the **File Type** selector when a strong signal is found.
+As you type in the IaC prompt textarea, the tool runs a debounced (300 ms) keyword scan and automatically switches the **File Type** selector when a strong signal is found.
 
 | Keywords detected | File type selected |
 |-------------------|--------------------|
-| `terraform`, `tf`, `hcl`, `iac`, `infrastructure as code` | Terraform (`.tf`) |
+| `terraform`, `hcl`, `iac`, `infrastructure as code` | Terraform (`.tf`) |
+| `arm template`, `azure resource manager`, `arm` | ARM Template (`.json`) |
+| `cloudformation`, `cfn`, `cloud formation`, `aws template`, `aws stack`, `aws resource` | CloudFormation (`.yaml`) |
 | `yaml`, `pipeline`, `github actions`, `ci/cd`, `gitlab ci`, `azure devops`, `ansible`, `kubernetes`, `k8s`, `helm`, `docker compose`, `workflow`, `jenkinsfile`, `jenkins` | YAML (`.yaml`) |
-| `json`, `package.json`, `appsettings` | JSON (`.json`) |
 | `shell script`, `bash script`, `bash`, `shell`, `script`, `zsh` | Shell Script (`.sh`) |
 
-**Detection priority:** Terraform is matched first. This means a prompt like *"terraform script"* correctly selects Terraform, not Shell Script.
+**Detection priority:** Terraform is matched first, followed by ARM Template, CloudFormation, YAML, and Shell Script. A prompt like *"terraform script"* correctly selects Terraform, not Shell Script.
 
 **Visual feedback:**
-- The File Type selector briefly glows (CSS `fileTypeGlow` animation).
+- The File Type selector briefly glows (CSS animation).
 - An **auto** badge appears next to the selector to indicate the switch was automatic.
 
 **Manual override:** You can always change the file type manually after an auto-switch. Manual selections are respected and do not revert until the next debounce cycle detects a different strong signal.
@@ -321,20 +408,20 @@ When the limit is exceeded the server returns HTTP 429 with the message:
 Too many requests — please wait before trying again.
 ```
 
-The error is displayed as a toast notification in the browser.
+This limit is shared across both IaC and CI/CD routes.
 
 ### Input length limits
 
 | Field | Maximum length |
 |-------|---------------|
-| Prompt / Code input | 4,000 characters |
+| IaC prompt / CI/CD pipeline description | 4,000 characters |
 | Existing code (Explain, Migrate) | 8,000 characters |
 
 Requests exceeding these limits are rejected with HTTP 400 before reaching the AI model.
 
 ### GitHub Models quota
 
-GitHub imposes its own request and token quotas on the AI Inference endpoint, separate from the server-side rate limit. If you receive model-level errors (e.g., *"rate limit exceeded"* from the upstream API), wait and retry.
+GitHub imposes its own request and token quotas on the AI Inference endpoint, separate from the server-side rate limit. If you receive model-level errors (e.g., *"rate limit exceeded"*), wait and retry.
 
 ---
 
@@ -347,10 +434,11 @@ GitHub imposes its own request and token quotas on the AI Inference endpoint, se
 | `HTTP 429` | Rate limit exceeded | Wait for the 15-minute window to reset |
 | `HTTP 400 — input exceeds 4000 characters` | Prompt too long | Shorten the prompt |
 | `HTTP 400 — code exceeds 8000 characters` | Code too large for explain/migrate | Split the code into smaller sections |
-| `HTTP 400 — fileType must be one of: tf, yaml, json, sh` | Invalid file type sent by client | Refresh the page; this should not occur in normal use |
+| `HTTP 400 — fileType must be one of: tf, yaml, json, sh, arm, cfn` | Invalid IaC file type | Refresh the page; should not occur in normal use |
+| `HTTP 400 — platform must be one of: github-actions, azure-devops, gitlab-ci, jenkins` | Invalid CI/CD platform | Refresh the page; should not occur in normal use |
+| `HTTP 400 — targetPlatform must be one of: ...` | Invalid CI/CD migration target | Refresh the page; should not occur in normal use |
 | `Request timed out` | Model took longer than 30–60 s | Retry, or switch to a faster model (e.g., `gpt-4o-mini`) |
 | `Failed to fetch` | Server is not running | Start the server with `npm start` |
-| `targetPlatform must be github-actions or jenkins` | Invalid migration target | Refresh the page; this should not occur in normal use |
 
 ---
 
@@ -383,7 +471,7 @@ Checks:
 1. Open the browser **Developer Tools → Console** tab for client-side errors.
 2. Check the server terminal window for backend errors.
 3. Confirm your GitHub token has the **Models** scope and has not expired.
-4. Try switching to the `gpt-4o-mini` model (the most reliable fallback).
+4. Try switching to the `gpt-4o-mini` model.
 
 ---
 
@@ -394,7 +482,7 @@ Checks:
 Checks:
 1. Confirm the Code tab has content before clicking Explain Code.
 2. Check the server terminal for upstream API errors.
-3. The explanation response uses Markdown rendering — if the response contains only whitespace or was empty, the tab will appear blank. Retry the request.
+3. The explanation response uses Markdown rendering — if the response was empty, the tab will appear blank. Retry the request.
 
 ---
 
@@ -402,21 +490,25 @@ Checks:
 
 **Cause:** History is stored in `localStorage`. This storage is per-browser, per-origin, and per-profile.
 
-Resolution: Do not clear browser data (cookies, site data, local storage) if you need to retain history. History cannot be recovered once the browser data is cleared.
+Resolution: Do not clear browser data (cookies, site data, local storage) if you need to retain history.
 
 ---
 
-### The Migrate Pipeline button / dropdown is not visible
+### CI/CD migration output appears all at once instead of streaming
 
-**Cause:** The migration controls are hidden when the file type is not `YAML`.
-
-Resolution: Set the **File Type** selector to `YAML (.yaml)`.
+**Cause:** `/cicd/migrate` is a non-streaming endpoint — the model generates the full conversion before responding. This is expected behaviour.
 
 ---
 
 ### DeepSeek-V3 output appears all at once instead of streaming
 
 **Cause:** DeepSeek-V3 does not support SSE on the Azure AI Inference endpoint. The server fetches the full response and sends it as a single event. This is expected behaviour.
+
+---
+
+### The source platform shows "Unknown" in the Migrate sub-tab
+
+**Cause:** The client-side regex could not match a clear signal in the pasted code. This is not an error — the model will auto-detect the source platform from the code content and still perform the migration.
 
 ---
 
@@ -435,8 +527,8 @@ Resolution: Set the **File Type** selector to `YAML (.yaml)`.
 
 ### Network access
 
-- By default the server binds to all interfaces on port 3000. Anyone on the local network who can reach your machine on port 3000 can use the tool and trigger AI calls against your GitHub token.
-- If running on a shared network, add a firewall rule to restrict access to `127.0.0.1` only, or change the `app.listen` call in `server.js`:
+- By default the server binds to all interfaces on port 3000. Anyone on the local network who can reach your machine on port 3000 can use the tool and consume your GitHub token quota.
+- If running on a shared network, restrict access to `127.0.0.1`:
   ```js
   app.listen(3000, '127.0.0.1', () => console.log("Running on 3000"));
   ```
@@ -446,16 +538,17 @@ Resolution: Set the **File Type** selector to `YAML (.yaml)`.
 The server rejects:
 - Prompts longer than 4,000 characters
 - Code inputs longer than 8,000 characters
-- File types outside `tf`, `yaml`, `json`, `sh`
+- File types outside `tf`, `yaml`, `json`, `sh`, `arm`, `cfn`
+- CI/CD platforms outside `github-actions`, `azure-devops`, `gitlab-ci`, `jenkins`
 - Model IDs outside the allowlist
-- Migration targets outside `github-actions`, `jenkins`
+- Legacy migration targets outside `github-actions`, `jenkins`
 
 Do not remove or weaken these checks.
 
 ### XSS
 
-All user-supplied strings inserted into the DOM are passed through `escHtml()` before insertion. The Explanation tab uses `marked.js` to render Markdown as HTML — only explanation content from the AI response is rendered this way, never raw user input.
+All user-supplied strings inserted into the DOM are passed through `escHtml()` before insertion. The Explanation tab uses `marked.js` to render Markdown as HTML — only AI-generated explanation content is rendered this way, never raw user input.
 
 ---
 
-*Document version: 1.0 — May 2026*
+*Document version: 2.0 — May 2026*

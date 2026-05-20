@@ -14,20 +14,13 @@
     body {
       height: 100vh;
       overflow: auto;
-      background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a0e3d, #0d1b3e);
-      background-size: 400% 400%;
-      animation: gradientBG 18s ease infinite;
+      background: linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #e0e0e0;
       display: flex;
       flex-direction: column;
     }
 
-    @keyframes gradientBG {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
 
     /* ── Header ── */
     header {
@@ -514,7 +507,8 @@
         rgba(255,255,255,0.03) 100%
       );
       background-size: 200% 100%;
-      animation: shimmer 1.8s ease-in-out infinite;
+      animation: shimmer 2.4s ease-in-out infinite;
+      will-change: background-position;
     }
 
     .sk-line:nth-child(1)  { width: 25%; animation-delay: 0s;    }
@@ -1476,7 +1470,7 @@
             try { parsed = JSON.parse(raw); } catch { continue; }
             if (parsed.error) throw new Error(parsed.error);
             const delta = parsed.choices?.[0]?.delta?.content ?? '';
-            if (delta) { fullCode += delta; codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }
+            if (delta) { fullCode += delta; requestAnimationFrame(() => { codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }); }
           }
         }
 
@@ -1924,7 +1918,7 @@
             try { parsed = JSON.parse(raw); } catch { continue; }
             if (parsed.error) throw new Error(parsed.error);
             const delta = parsed.choices?.[0]?.delta?.content ?? '';
-            if (delta) { fullCode += delta; codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }
+            if (delta) { fullCode += delta; requestAnimationFrame(() => { codeEl.textContent = fullCode; pre.scrollTop = pre.scrollHeight; }); }
           }
         }
 
